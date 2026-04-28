@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rialo Quest</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #04040a;
+            --bg1: #080810;
+            --bg2: #0d0d1a;
+            --bg3: #121225;
+            --border: rgba(120, 80, 255, 0.12);
+            --border2: rgba(120, 80, 255, 0.22);
+            --purple: #7850ff;
+            --purple2: #a07aff;
+            --purple3: #c8b0ff;
+            --cyan: #00e5c8;
+            --cyan2: #00b89f;
+            --amber: #ffb930;
+            --text: #eeeeff;
+            --text2: #9090b8;
+            --text3: #50507a;
+            --green: #22d680;
+            --red: #ff4d6a;
+            --card-bg: linear-gradient(135deg, rgba(120, 80, 255, 0.06) 0%, rgba(0, 229, 200, 0.03) 100%);
+            --glow: 0 0 40px rgba(120, 80, 255, 0.15), 0 0 80px rgba(0, 229, 200, 0.05);
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -30%;
+            left: -20%;
+            width: 70%;
+            height: 70%;
+            background: radial-gradient(ellipse, rgba(120, 80, 255, 0.06) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -20%;
+            right: -20%;
+            width: 60%;
+            height: 60%;
+            background: radial-gradient(ellipse, rgba(0, 229, 200, 0.04) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .noise {
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.4;
+        }
+
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 0 32px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(4, 4, 10, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-mark {
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(135deg, var(--purple), var(--cyan));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Space Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: -1px;
+            box-shadow: 0 0 20px rgba(120, 80, 255, 0.4);
+        }
+
+        .nav-title {
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(90deg, var(--text), var(--purple3));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-sub {
+            font-size: 10px;
+            color: var(--text3);
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .network-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(0, 229, 200, 0.06);
+            border: 1px solid rgba(0, 229, 200, 0.15);
+            border-radius: 99px;
+            font-size: 11px;
+            color: var(--cyan);
+            font-family: 'Space Mono', monospace;
+        }
+
+        .network-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--cyan);
+            border-radius: 50%;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.3
+            }
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn {
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 8px 18px;
+            border-radius: 8px;
+            border: 1px solid var(--border2);
+            background: rgba(120, 80, 255, 0.08);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.01em;
+        }
+
+        .btn:hover {
+            background: rgba(120, 80, 255, 0.18);
+            border-color: var(--purple);
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--purple), #5530dd);
+            border-color: transparent;
+            color: white;
+            box-shadow: 0 4px 20px rgba(120, 80, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 30px rgba(120, 80, 255, 0.5);
+            background: linear-gradient(135deg, #8860ff, #6640ee);
+        }
+
+        .btn-cyan {
+            background: rgba(0, 229, 200, 0.1);
+            border-color: rgba(0, 229, 200, 0.3);
+            color: var(--cyan);
+        }
+
+        .btn-cyan:hover {
+            background: rgba(0, 229, 200, 0.2);
+        }
+
+        .page {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 80px 24px 40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 14px;
+            background: rgba(120, 80, 255, 0.1);
+            border: 1px solid var(--border2);
+            border-radius: 99px;
+            font-size: 11px;
+            color: var(--purple2);
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+        }
+
+        .hero h1 {
+            font-size: clamp(36px, 6vw, 58px);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffffff 0%, var(--purple3) 50%, var(--cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 16px;
+            color: var(--text2);
+            max-width: 440px;
+            margin: 0 auto 36px;
+            line-height: 1.7;
+            font-weight: 300;
+        }
+
+        .hero-features {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .hero-feat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text2);
+        }
+
+        .feat-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .feat-dot.purple {
+            background: var(--purple);
+        }
+
+        .feat-dot.cyan {
+            background: var(--cyan);
+        }
+
+        .feat-dot.amber {
+            background: var(--amber);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(120, 80, 255, 0.4), rgba(0, 229, 200, 0.3), transparent);
+        }
+
+        .card-header {
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text3);
+            font-family: 'Space Mono', monospace;
+        }
+
+        .char-top {
+            padding: 24px 22px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
+        }
+
+        .char-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(120, 80, 255, 0.3), rgba(0, 229, 200, 0.2));
+            border: 1px solid var(--border2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
+            box-shadow: 0 0 30px rgba(120, 80, 255, 0.2);
+        }
+
+        .char-meta {
+            flex: 1;
+        }
+
+        .char-name {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 4px;
+        }
+
+        .char-addr {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--text3);
+            margin-bottom: 10px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .badge-purple {
+            background: rgba(120, 80, 255, 0.15);
+            color: var(--purple2);
+            border: 1px solid rgba(120, 80, 255, 0.25);
+        }
+
+        .badge-cyan {
+            background: rgba(0, 229, 200, 0.1);
+            color: var(--cyan);
+            border: 1px solid rgba(0, 229, 200, 0.2);
+        }
+
+        .badge-amber {
+            background: rgba(255, 185, 48, 0.1);
+            color: var(--amber);
+            border: 1px solid rgba(255, 185, 48, 0.2);
+        }
+
+        .badge-green {
+            background: rgba(34, 214, 128, 0.1);
+            color: var(--green);
+            border: 1px solid rgba(34, 214, 128, 0.2);
+        }
+
+        .xp-section {
+            padding: 18px 22px;
+        }
+
+        .xp-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .xp-current {
+            font-size: 24px;
+            font-weight: 700;
+            font-family: 'Space Mono', monospace;
+            color: var(--text);
+        }
+
+        .xp-current span {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text3);
+            margin-left: 4px;
+        }
+
+        .xp-to-next {
+            font-size: 12px;
+            color: var(--text3);
+            font-family: 'Space Mono', monospace;
+        }
+
+        .xp-track {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 99px;
+            overflow: visible;
+            position: relative;
+        }
+
+        .xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--purple), var(--cyan));
+            border-radius: 99px;
+            transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 0 12px rgba(120, 80, 255, 0.6);
+            position: relative;
+        }
+
+        .xp-fill::after {
+            content: '';
+            position: absolute;
+            right: -1px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border-top: 1px solid var(--border);
+        }
+
+        .stat-box {
+            background: var(--bg1);
+            padding: 16px 20px;
+            text-align: center;
+        }
+
+        .stat-num {
+            font-size: 26px;
+            font-weight: 700;
+            font-family: 'Space Mono', monospace;
+            letter-spacing: -0.02em;
+            margin-bottom: 2px;
+        }
+
+        .stat-lbl {
+            font-size: 10px;
+            color: var(--text3);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .badges-wrap {
+            padding: 16px 22px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            min-height: 50px;
+            align-items: center;
+        }
+
+        .no-badges {
+            font-size: 12px;
+            color: var(--text3);
+            font-family: 'Space Mono', monospace;
+        }
+
+        .input-card {
+            padding: 20px 22px;
+        }
+
+        .input-label {
+            font-size: 11px;
+            color: var(--text2);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+
+        .input-label-tag {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--text3);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 7px;
+            border-radius: 4px;
+        }
+
+        input[type=text] {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border2);
+            border-radius: 10px;
+            padding: 11px 14px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: 'Space Mono', monospace;
+            transition: all 0.2s;
+        }
+
+        input[type=text]:focus {
+            outline: none;
+            border-color: var(--purple);
+            background: rgba(120, 80, 255, 0.06);
+            box-shadow: 0 0 0 3px rgba(120, 80, 255, 0.1);
+        }
+
+        input[type=text]::placeholder {
+            color: var(--text3);
+        }
+
+        .quest-item {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: background 0.15s;
+            position: relative;
+        }
+
+        .quest-item:last-child {
+            border-bottom: none;
+        }
+
+        .quest-item:hover {
+            background: rgba(120, 80, 255, 0.04);
+        }
+
+        .quest-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .qi-onchain {
+            background: rgba(34, 214, 128, 0.1);
+            border: 1px solid rgba(34, 214, 128, 0.2);
+        }
+
+        .qi-github {
+            background: rgba(120, 80, 255, 0.1);
+            border: 1px solid rgba(120, 80, 255, 0.2);
+        }
+
+        .qi-event {
+            background: rgba(0, 229, 200, 0.1);
+            border: 1px solid rgba(0, 229, 200, 0.2);
+        }
+
+        .qi-content {
+            background: rgba(255, 185, 48, 0.1);
+            border: 1px solid rgba(255, 185, 48, 0.2);
+        }
+
+        .qi-vouching {
+            background: rgba(255, 77, 106, 0.1);
+            border: 1px solid rgba(255, 77, 106, 0.2);
+        }
+
+        .quest-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .quest-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            letter-spacing: -0.01em;
+        }
+
+        .quest-tags {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .xp-tag {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--cyan);
+        }
+
+        .sep {
+            color: var(--text3);
+            font-size: 10px;
+        }
+
+        .type-tag {
+            font-size: 11px;
+            color: var(--text3);
+        }
+
+        .section-gap {
+            height: 16px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--bg2);
+            border: 1px solid var(--border2);
+            border-radius: 12px;
+            padding: 13px 20px;
+            font-size: 13px;
+            max-width: 500px;
+            width: calc(100vw - 48px);
+            z-index: 9999;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            box-shadow: var(--glow);
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s;
+            opacity: 0;
+            word-break: break-all;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 3px;
+        }
+
+        .toast-msg {
+            flex: 1;
+            line-height: 1.5;
+        }
+
+        .toast.success .toast-dot {
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green);
+        }
+
+        .toast.error .toast-dot {
+            background: var(--red);
+            box-shadow: 0 0 8px var(--red);
+        }
+
+        .toast.info .toast-dot {
+            background: var(--purple2);
+            box-shadow: 0 0 8px var(--purple2);
+        }
+
+        .toast.success {
+            border-color: rgba(34, 214, 128, 0.25);
+        }
+
+        .toast.error {
+            border-color: rgba(255, 77, 106, 0.25);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--text3);
+            font-size: 13px;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="noise"></div>
+
+    <nav class="nav">
+        <div class="nav-logo">
+            <div class="logo-mark">RQ</div>
+            <div>
+                <div class="nav-title">Rialo Quest</div>
+                <div class="nav-sub">IRL Reputation Engine</div>
+            </div>
+        </div>
+        <div class="nav-right">
+            <div class="network-pill">
+                <div class="network-dot"></div>
+                Base Sepolia
+            </div>
+            <button class="btn" id="wallet-btn" onclick="connectWallet()">Connect wallet</button>
+        </div>
+    </nav>
+
+    <div id="hero-view">
+        <div class="hero">
+            <div class="hero-eyebrow">
+                <div class="feat-dot purple"></div>
+                Onchain · Real World · Verified
+            </div>
+            <h1>Your IRL activity,<br>onchain forever.</h1>
+            <p>Attend conferences, ship code, contribute to communities — every real-world action earns your character
+                XP and permanent onchain badges.</p>
+            <div class="hero-features">
+                <div class="hero-feat">
+                    <div class="feat-dot purple"></div>GitHub contributions
+                </div>
+                <div class="hero-feat">
+                    <div class="feat-dot cyan"></div>Event attendance
+                </div>
+                <div class="hero-feat">
+                    <div class="feat-dot amber"></div>Community vouching
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="connectWallet()"
+                style="font-size:15px; padding:13px 32px; border-radius:10px;">
+                Start your journey
+            </button>
+        </div>
+    </div>
+
+    <div id="app-view" style="display:none;">
+        <div class="page fade-in">
+
+            <div id="char-section">
+                <div class="card" id="no-char-card" style="display:none;">
+                    <div class="empty-state">
+                        <div style="font-size:36px; margin-bottom:16px;">⚔️</div>
+                        <div
+                            style="color:var(--text2); font-size:14px; font-family:'Outfit',sans-serif; margin-bottom:20px;">
+                            No character found for this wallet.</div>
+                        <button class="btn btn-primary" onclick="registerPlayer()" id="register-btn">Create your
+                            character</button>
+                    </div>
+                </div>
+
+                <div class="card" id="char-card" style="display:none;">
+                    <div class="char-top">
+                        <div class="char-avatar" id="char-emoji">⚔️</div>
+                        <div class="char-meta">
+                            <div class="char-name" id="char-class-name">Explorer</div>
+                            <div class="char-addr" id="char-addr-text"></div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <span class="badge badge-purple" id="level-badge">Lv. 1</span>
+                                <span class="badge badge-cyan" id="streak-badge">0 day streak</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="xp-section">
+                        <div class="xp-row">
+                            <div class="xp-current" id="xp-display">0 <span>XP</span></div>
+                            <div class="xp-to-next" id="xp-pct">0% to next level</div>
+                        </div>
+                        <div class="xp-track">
+                            <div class="xp-fill" id="xp-bar" style="width:0%"></div>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-num" id="s-level" style="color:var(--purple2)">1</div>
+                            <div class="stat-lbl">Level</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-num" id="s-streak" style="color:var(--cyan)">0</div>
+                            <div class="stat-lbl">Streak</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-num" id="s-badges" style="color:var(--amber)">0</div>
+                            <div class="stat-lbl">Badges</div>
+                        </div>
+                    </div>
+                    <div class="badges-wrap" id="badges-wrap">
+                        <span class="no-badges">// no badges earned yet</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-gap"></div>
+
+            <div class="card">
+                <div class="input-card">
+                    <div class="input-label">
+                        GitHub username
+                        <span class="input-label-tag">required for GitHub quests</span>
+                    </div>
+                    <input type="text" id="github-input" placeholder="e.g. Johndoe8" autocomplete="off"
+                        spellcheck="false" />
+                </div>
+            </div>
+
+            <div class="section-gap"></div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-label">Active quests</span>
+                    <span id="quest-count"
+                        style="font-size:11px; color:var(--text3); font-family:'Space Mono',monospace;">—</span>
+                </div>
+                <div id="quest-list">
+                    <div class="empty-state">Loading quests from chain...</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <div class="toast-dot"></div>
+        <div class="toast-msg" id="toast-msg"></div>
+    </div>
+
+    <script>
+        const CHAR_ADDR = "0x095cee07dd861375170b3Bb1EB74D580E6Ff604B";
+        const QUEST_ADDR = "0xC8E3c576c6aBC7536f7B158220e146aEE44C0725";
+        const RPC = "https://base-sepolia.g.alchemy.com/v2/vb3Bzn_tat0K9GhIIcEr9";
+        const RELAY = "http://localhost:3000/api/complete-quest";
+
+        const CHAR_ABI = [
+            "function playerToken(address) view returns (uint256)",
+            "function characters(uint256) view returns (uint8,uint32,uint8,uint16,uint64)",
+            "function getBadges(uint256) view returns (tuple(string questId,uint8 badgeType,uint64 earnedAt,uint32 xpAwarded)[])"
+        ];
+        const QUEST_ABI = [
+            "function getAllQuests() view returns (tuple(string id,string name,uint32 xpReward,uint8 badgeType,uint8 triggerType,bool active)[])",
+            "function registerPlayer() external",
+            "function completeOnchainQuest(string) external"
+        ];
+
+        const TRIGGERS = ["Onchain", "GitHub", "Event", "Content", "Vouching"];
+        const CLASSES = ["Explorer", "Contributor", "Builder", "Core Builder", "Educator"];
+        const EMOJIS = ["⚔️", "🛠️", "🏗️", "🔱", "📚"];
+        const QUEST_ICONS = ["🔗", "🐙", "🎟️", "✍️", "🤝"];
+        const QUEST_ICON_CLS = ["qi-onchain", "qi-github", "qi-event", "qi-content", "qi-vouching"];
+
+        const QUEST_NAMES = {
+            "discord-og": "Discord Contributor",
+            "github-first-pr": "Github Repository",
+            "thread-writer": "X Content Creator",
+        };
+
+        let provider, signer, addr;
+        let toastTimer;
+
+        function toast(msg, type) {
+            const el = document.getElementById("toast");
+            const ml = document.getElementById("toast-msg");
+            el.className = "toast " + (type || "info");
+            ml.textContent = msg;
+            el.classList.add("show");
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove("show"), 6000);
+        }
+
+        async function connectWallet() {
+            if (!window.ethereum) { toast("No wallet detected. Install OKX Wallet or MetaMask.", "error"); return; }
+            try {
+                toast("Connecting...", "info");
+                provider = new ethers.BrowserProvider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                const net = await provider.getNetwork();
+                if (net.chainId !== 84532n) {
+                    try {
+                        await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x14A34" }] });
+                        provider = new ethers.BrowserProvider(window.ethereum);
+                    } catch (e) {
+                        toast("Switch to Base Sepolia in your wallet.", "error");
+                        return;
+                    }
+                }
+                signer = await provider.getSigner();
+                addr = await signer.getAddress();
+                document.getElementById("wallet-btn").textContent = addr.slice(0, 6) + "..." + addr.slice(-4);
+                document.getElementById("hero-view").style.display = "none";
+                document.getElementById("app-view").style.display = "block";
+                toast("Wallet connected.", "success");
+                await Promise.all([loadChar(), loadQuests()]);
+            } catch (e) {
+                toast("Failed: " + (e.shortMessage || e.message), "error");
+            }
+        }
+
+        async function loadChar() {
+            try {
+                const rp = new ethers.JsonRpcProvider(RPC);
+                const cc = new ethers.Contract(CHAR_ADDR, CHAR_ABI, rp);
+                const tid = await cc.playerToken(addr);
+                if (tid === 0n) {
+                    document.getElementById("no-char-card").style.display = "block";
+                    document.getElementById("char-card").style.display = "none";
+                    return;
+                }
+                document.getElementById("no-char-card").style.display = "none";
+                document.getElementById("char-card").style.display = "block";
+                const [ch, badges] = await Promise.all([cc.characters(tid), cc.getBadges(tid)]);
+                const lv = Number(ch[0]), xp = Number(ch[1]), cls = Number(ch[2]), streak = Number(ch[3]);
+                const xpToNext = lv < 10 ? 100 : lv < 30 ? 250 : lv < 60 ? 500 : 1000;
+                const xpFloor = lv < 10 ? (lv - 1) * 100 : lv < 30 ? 1000 + (lv - 11) * 250 : lv < 60 ? 6000 + (lv - 31) * 500 : 21000 + (lv - 61) * 1000;
+                const pct = Math.min(100, Math.round(((xp - xpFloor) / xpToNext) * 100));
+                document.getElementById("char-emoji").textContent = EMOJIS[cls] || "⚔️";
+                document.getElementById("char-class-name").textContent = CLASSES[cls] || "Explorer";
+                document.getElementById("char-addr-text").textContent = addr.slice(0, 10) + "..." + addr.slice(-8);
+                document.getElementById("level-badge").textContent = "Lv. " + lv;
+                document.getElementById("streak-badge").textContent = streak + " day streak";
+                document.getElementById("xp-display").innerHTML = xp.toLocaleString() + " <span>XP</span>";
+                document.getElementById("xp-pct").textContent = pct + "% to Level " + (lv + 1);
+                document.getElementById("xp-bar").style.width = pct + "%";
+                document.getElementById("s-level").textContent = lv;
+                document.getElementById("s-streak").textContent = streak;
+                document.getElementById("s-badges").textContent = badges.length;
+                const bw = document.getElementById("badges-wrap");
+                if (badges.length === 0) {
+                    bw.innerHTML = '<span class="no-badges">// no badges earned yet</span>';
+                } else {
+                    bw.innerHTML = Array.from(badges).map(function (b) {
+                        return '<span class="badge badge-purple">' + b.questId + '</span>';
+                    }).join("");
+                }
+            } catch (e) {
+                toast("Error loading character: " + e.message, "error");
+            }
+        }
+
+        async function loadQuests() {
+            try {
+                const rp = new ethers.JsonRpcProvider(RPC);
+                const qc = new ethers.Contract(QUEST_ADDR, QUEST_ABI, rp);
+                const qs = await qc.getAllQuests();
+                const active = Array.from(qs).filter(function (q) { return q.active; });
+                document.getElementById("quest-count").textContent = active.length + " quests";
+                document.getElementById("quest-list").innerHTML = active.map(function (q) {
+                    const t = Number(q.triggerType);
+                    const displayName = QUEST_NAMES[q.id] || q.name;
+                    return '<div class="quest-item">' +
+                        '<div class="quest-icon ' + QUEST_ICON_CLS[t] + '">' + QUEST_ICONS[t] + '</div>' +
+                        '<div class="quest-body">' +
+                        '<div class="quest-name">' + displayName + '</div>' +
+                        '<div class="quest-tags">' +
+                        '<span class="xp-tag">+' + q.xpReward + ' XP</span>' +
+                        '<span class="sep">·</span>' +
+                        '<span class="type-tag">' + TRIGGERS[t] + ' verified</span>' +
+                        '</div>' +
+                        '</div>' +
+                        '<button class="btn btn-cyan" style="font-size:12px;padding:6px 14px;" onclick="completeQuest(\'' + q.id + '\',' + t + ')" id="btn-' + q.id + '">Complete</button>' +
+                        '</div>';
+                }).join("");
+            } catch (e) {
+                toast("Error loading quests: " + e.message, "error");
+            }
+        }
+
+        async function registerPlayer() {
+            const btn = document.getElementById("register-btn");
+            btn.disabled = true; btn.textContent = "Creating...";
+            try {
+                toast("Sending transaction...", "info");
+                const c = new ethers.Contract(QUEST_ADDR, QUEST_ABI, signer);
+                const tx = await c.registerPlayer();
+                toast("Confirming...", "info");
+                await tx.wait();
+                toast("Character created! Welcome to Rialo Quest.", "success");
+                setTimeout(loadChar, 2000);
+            } catch (e) {
+                toast("Error: " + (e.shortMessage || e.message), "error");
+                btn.disabled = false; btn.textContent = "Create your character";
+            }
+        }
+
+        async function completeQuest(questId, triggerType) {
+            const btn = document.getElementById("btn-" + questId);
+            if (btn) { btn.disabled = true; btn.textContent = "..."; }
+            try {
+                if (questId === "deploy-on-base") {
+                    toast("Checking deployment history on Base Sepolia...", "info");
+                    const res = await fetch(RELAY, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            questId: questId,
+                            playerAddress: addr,
+                            playerIdentifier: addr,
+                            triggerType: "DeployOnBase"
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.verified) {
+                        toast("Quest complete! TX: " + data.txHash, "success");
+                        setTimeout(loadChar, 5000);
+                    } else {
+                        toast(data.message || "No deployments found on Base Sepolia.", "error");
+                    }
+                } else if (triggerType === 0) {
+                    toast("Submitting onchain...", "info");
+                    const c = new ethers.Contract(QUEST_ADDR, QUEST_ABI, signer);
+                    const tx = await c.completeOnchainQuest(questId);
+                    await tx.wait();
+                    toast("Quest complete! XP awarded.", "success");
+                    setTimeout(loadChar, 3000);
+                } else if (triggerType === 1) {
+                    const gh = document.getElementById("github-input").value.trim();
+                    if (!gh) { toast("Enter your GitHub username first.", "error"); if (btn) { btn.disabled = false; btn.textContent = "Complete"; } return; }
+                    toast("Verifying with GitHub API...", "info");
+                    const res = await fetch(RELAY, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            questId: questId,
+                            playerAddress: addr,
+                            playerIdentifier: gh,
+                            triggerType: "GitHub"
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.verified) {
+                        toast("Quest complete! TX: " + data.txHash, "success");
+                        setTimeout(loadChar, 5000);
+                    } else {
+                        toast(data.message || data.error || "Conditions not met.", "error");
+                    }
+                } else {
+                    toast("This quest type is coming soon.", "info");
+                }
+            } catch (e) {
+                toast("Error: " + (e.shortMessage || e.message), "error");
+            }
+            if (btn) { btn.disabled = false; btn.textContent = "Complete"; }
+        }
+    </script>
+</body>
+
+</html>

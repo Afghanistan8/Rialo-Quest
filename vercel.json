@@ -1,0 +1,1 @@
+{"version":2,"builds":[{"src":"simple-frontend/index.html","use":"@vercel/static"}],"routes":[{"src":"/(.*)","dest":"/simple-frontend/index.html"}]}

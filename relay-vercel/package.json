@@ -11,6 +11,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "ethers": "^6.9.0",
     "viem": "^2.48.4"
   }
 }

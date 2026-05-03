@@ -1,20 +1,30 @@
 // /api/complete-quest.js
-// Verifies quest completion and mints onchain via QuestManager
+// Verifies quest completion and mints onchain via QuestManager.completeQuestAsRelayer
 
-const { ethers } = require('ethers');
+const { createWalletClient, createPublicClient, http, parseAbi, isAddress } = require('viem');
+const { privateKeyToAccount } = require('viem/accounts');
+const { baseSepolia } = require('viem/chains');
 
 // ─── CONFIG ─────────────────────────────────────────────
-const QUEST_MANAGER_ADDRESS = '0xC8E3c576c6aBC7536f7B158220e146aEE44C0725';
-const BASE_SEPOLIA_RPC = 'https://sepolia.base.org';
+const QUEST_MANAGER_ADDRESS = process.env.NEXT_PUBLIC_QUEST_MANAGER_CONTRACT;
+const ALCHEMY_URL = process.env.NEXT_PUBLIC_ALCHEMY_URL || 'https://sepolia.base.org';
 
-// QuestManager ABI (minimal - just what we need)
-const QUEST_MANAGER_ABI = [
-  'function completeQuest(address user, uint256 questId) external',
-  'function hasCompleted(address user, uint256 questId) view returns (bool)'
-];
+const QUEST_MANAGER_ABI = parseAbi([
+  'function completeQuestAsRelayer(address player, string calldata questId) external',
+  'function hasCompleted(string calldata questId, address player) external view returns (bool)'
+]);
 
-// ─── IRL EVENT CODES (Quest 4) ──────────────────────────
-// Pre-generated codes you hand out at events. Add/remove as needed.
+// ─── QUEST MAP ──────────────────────────────────────────
+// Maps frontend numeric IDs to actual onchain string IDs
+const QUEST_MAP = {
+  1: { id: 'first-deploy',     trigger: 'onchain-self',  xp: 150 },  // Player must call directly
+  2: { id: 'discord-og',       trigger: 'manual',        xp: 100 },  // Manual review
+  3: { id: 'github-first-pr',  trigger: 'github',        xp: 200 },  // Auto verify
+  4: { id: 'first-irl-event',  trigger: 'irl-code',      xp: 350 },  // Code system
+  5: { id: 'thread-writer',    trigger: 'manual',        xp: 175 }   // Manual review
+};
+
+// ─── IRL EVENT CODES ────────────────────────────────────
 const VALID_IRL_CODES = new Set([
   'RIALO-MEET-001', 'RIALO-MEET-002', 'RIALO-MEET-003',
   'RIALO-MEET-004', 'RIALO-MEET-005', 'RIALO-MEET-006',
@@ -23,82 +33,39 @@ const VALID_IRL_CODES = new Set([
   'RIALO-LAGOS-003', 'RIALO-LAGOS-004', 'RIALO-LAGOS-005'
 ]);
 
-// In-memory used-codes set (resets on cold start - upgrade to KV/DB later)
 const usedCodes = new Set();
-
-// In-memory pending submissions for manual review (Discord, X)
-// Upgrade to Vercel KV or a proper DB for persistence
 const pendingSubmissions = [];
 
 // ─── VERIFIERS ──────────────────────────────────────────
 
-// Quest 1: Deploy on Base — verify contract deployment tx
-async function verifyBaseDeployment(userAddress, txHash) {
-  if (!txHash || !/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
-    return { ok: false, reason: 'Invalid transaction hash format' };
-  }
-
-  try {
-    const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC);
-    const receipt = await provider.getTransactionReceipt(txHash);
-
-    if (!receipt) {
-      return { ok: false, reason: 'Transaction not found on Base Sepolia' };
-    }
-    if (receipt.status !== 1) {
-      return { ok: false, reason: 'Transaction failed onchain' };
-    }
-    if (receipt.from.toLowerCase() !== userAddress.toLowerCase()) {
-      return { ok: false, reason: 'Transaction was not sent from your wallet' };
-    }
-    if (receipt.contractAddress === null) {
-      return { ok: false, reason: 'This transaction is not a contract deployment' };
-    }
-
-    return { ok: true, message: `Verified deployment at ${receipt.contractAddress}` };
-  } catch (err) {
-    return { ok: false, reason: `RPC error: ${err.message}` };
-  }
-}
-
-// Quest 3: GitHub Repository — verify public repo exists with rialo mention
-async function verifyGitHubRepo(githubUsername) {
+// GitHub: Check user has at least 1 merged PR (matches your original logic)
+async function verifyGitHub(githubUsername) {
   if (!githubUsername || !/^[a-zA-Z0-9-]{1,39}$/.test(githubUsername)) {
-    return { ok: false, reason: 'Invalid GitHub username' };
+    return { ok: false, reason: 'Invalid GitHub username format' };
   }
-
   try {
-    const headers = { 'Accept': 'application/vnd.github.v3+json' };
+    const headers = { Accept: 'application/vnd.github.v3+json' };
     if (process.env.GITHUB_TOKEN) {
-      headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
+      headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
     }
-
     const res = await fetch(
-      `https://api.github.com/users/${githubUsername}/repos?per_page=100&sort=updated`,
+      `https://api.github.com/search/issues?q=author:${githubUsername}+type:pr+is:merged`,
       { headers }
     );
-
-    if (res.status === 404) return { ok: false, reason: 'GitHub user not found' };
-    if (!res.ok) return { ok: false, reason: `GitHub API error: ${res.status}` };
-
-    const repos = await res.json();
-    const rialoRepo = repos.find(r => {
-      const name = (r.name || '').toLowerCase();
-      const desc = (r.description || '').toLowerCase();
-      return name.includes('rialo') || desc.includes('rialo');
-    });
-
-    if (!rialoRepo) {
-      return { ok: false, reason: 'No public repo with "rialo" found. Create one and try again.' };
+    if (!res.ok) {
+      return { ok: false, reason: `GitHub API error: ${res.status}` };
     }
-
-    return { ok: true, message: `Verified repo: ${rialoRepo.full_name}` };
+    const data = await res.json();
+    if ((data.total_count || 0) === 0) {
+      return { ok: false, reason: 'No merged pull requests found for this GitHub user' };
+    }
+    return { ok: true, message: `Verified ${data.total_count} merged PR(s)` };
   } catch (err) {
     return { ok: false, reason: `GitHub check failed: ${err.message}` };
   }
 }
 
-// Quest 4: Show Up IRL — verify event code
+// IRL Event Code
 function verifyIRLCode(code) {
   if (!code) return { ok: false, reason: 'Code required' };
   const normalized = code.trim().toUpperCase();
@@ -112,15 +79,16 @@ function verifyIRLCode(code) {
   return { ok: true, message: `Code ${normalized} accepted` };
 }
 
-// Quest 2 & 5: Manual review (Discord, X)
-function queueForReview(userAddress, questId, proof) {
+// Manual review queue (Discord + Thread Writer)
+function queueForReview(userAddress, questNumericId, questStringId, proof) {
   if (!proof || proof.length < 3) {
     return { ok: false, reason: 'Proof URL/handle required' };
   }
   pendingSubmissions.push({
-    id: `${userAddress}-${questId}-${Date.now()}`,
+    id: `${userAddress}-${questNumericId}-${Date.now()}`,
     userAddress,
-    questId,
+    questNumericId,
+    questStringId,
     proof,
     submittedAt: new Date().toISOString(),
     status: 'pending'
@@ -133,29 +101,52 @@ function queueForReview(userAddress, questId, proof) {
 }
 
 // ─── ONCHAIN MINT ───────────────────────────────────────
-async function mintQuestCompletion(userAddress, questId) {
+async function mintQuestCompletion(playerAddress, questStringId) {
   if (!process.env.RELAYER_PRIVATE_KEY) {
     throw new Error('Relayer not configured (missing RELAYER_PRIVATE_KEY)');
   }
-
-  const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC);
-  const wallet = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY, provider);
-  const contract = new ethers.Contract(QUEST_MANAGER_ADDRESS, QUEST_MANAGER_ABI, wallet);
-
-  // Check if already completed
-  const alreadyDone = await contract.hasCompleted(userAddress, questId);
-  if (alreadyDone) {
-    return { txHash: null, alreadyCompleted: true };
+  if (!QUEST_MANAGER_ADDRESS) {
+    throw new Error('Missing NEXT_PUBLIC_QUEST_MANAGER_CONTRACT env var');
   }
 
-  const tx = await contract.completeQuest(userAddress, questId);
-  await tx.wait();
-  return { txHash: tx.hash, alreadyCompleted: false };
+  // Check if already completed
+  const publicClient = createPublicClient({
+    chain: baseSepolia,
+    transport: http(ALCHEMY_URL)
+  });
+
+  const alreadyDone = await publicClient.readContract({
+    address: QUEST_MANAGER_ADDRESS,
+    abi: QUEST_MANAGER_ABI,
+    functionName: 'hasCompleted',
+    args: [questStringId, playerAddress]
+  });
+
+  if (alreadyDone) return { txHash: null, alreadyCompleted: true };
+
+  const pk = process.env.RELAYER_PRIVATE_KEY.startsWith('0x')
+    ? process.env.RELAYER_PRIVATE_KEY
+    : `0x${process.env.RELAYER_PRIVATE_KEY}`;
+
+  const account = privateKeyToAccount(pk);
+  const walletClient = createWalletClient({
+    account,
+    chain: baseSepolia,
+    transport: http(ALCHEMY_URL)
+  });
+
+  const txHash = await walletClient.writeContract({
+    address: QUEST_MANAGER_ADDRESS,
+    abi: QUEST_MANAGER_ABI,
+    functionName: 'completeQuestAsRelayer',
+    args: [playerAddress, questStringId]
+  });
+
+  return { txHash, alreadyCompleted: false };
 }
 
 // ─── MAIN HANDLER ───────────────────────────────────────
 module.exports = async (req, res) => {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -166,41 +157,44 @@ module.exports = async (req, res) => {
   try {
     const { userAddress, questId, proof } = req.body || {};
 
-    // Validation
-    if (!userAddress || !ethers.isAddress(userAddress)) {
+    if (!userAddress || !isAddress(userAddress)) {
       return res.status(400).json({ success: false, error: 'Invalid user address' });
     }
-    if (!questId || typeof questId !== 'number') {
-      return res.status(400).json({ success: false, error: 'questId must be a number' });
+    const numId = Number(questId);
+    if (!QUEST_MAP[numId]) {
+      return res.status(400).json({ success: false, error: 'Unknown questId' });
     }
 
-    // Route to appropriate verifier
+    const quest = QUEST_MAP[numId];
     let verification;
-    switch (questId) {
-      case 1:
-        verification = await verifyBaseDeployment(userAddress, proof);
+
+    switch (quest.trigger) {
+      case 'github':
+        verification = await verifyGitHub(proof);
         break;
-      case 2:
-        verification = queueForReview(userAddress, 2, proof); // Discord
-        break;
-      case 3:
-        verification = await verifyGitHubRepo(proof);
-        break;
-      case 4:
+      case 'irl-code':
         verification = verifyIRLCode(proof);
         break;
-      case 5:
-        verification = queueForReview(userAddress, 5, proof); // X
+      case 'manual':
+        verification = queueForReview(userAddress, numId, quest.id, proof);
         break;
+      case 'onchain-self':
+        // Player must call completeOnchainQuest directly from their wallet
+        return res.status(200).json({
+          success: false,
+          requiresPlayerAction: true,
+          message: 'This quest requires you to sign the transaction yourself. The frontend will guide you.',
+          contractAddress: QUEST_MANAGER_ADDRESS,
+          questStringId: quest.id
+        });
       default:
-        return res.status(400).json({ success: false, error: 'Unknown questId' });
+        return res.status(500).json({ success: false, error: 'Unknown trigger type' });
     }
 
     if (!verification.ok) {
       return res.status(400).json({ success: false, error: verification.reason });
     }
 
-    // If pending review, return without minting
     if (verification.pending) {
       return res.status(200).json({
         success: true,
@@ -209,8 +203,8 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Verified! Mint onchain
-    const mint = await mintQuestCompletion(userAddress, questId);
+    // Verified — mint onchain
+    const mint = await mintQuestCompletion(userAddress, quest.id);
     if (mint.alreadyCompleted) {
       return res.status(200).json({
         success: false,
@@ -231,5 +225,5 @@ module.exports = async (req, res) => {
   }
 };
 
-// Export pending list for admin endpoint (in production, use shared DB)
 module.exports.pendingSubmissions = pendingSubmissions;
+module.exports.QUEST_MAP = QUEST_MAP;

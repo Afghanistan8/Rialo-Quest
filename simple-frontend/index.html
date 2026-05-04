@@ -21,13 +21,7 @@
       --sans: 'Inter Tight', sans-serif;
     }
     html { scroll-behavior: smooth; }
-    body {
-      background: var(--bg); color: var(--ink);
-      font-family: var(--sans); font-weight: 400;
-      letter-spacing: -0.01em; min-height: 100vh; overflow-x: hidden;
-      background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-      background-size: 64px 64px;
-    }
+    body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-weight: 400; letter-spacing: -0.01em; min-height: 100vh; overflow-x: hidden; background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px); background-size: 64px 64px; }
     body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212,255,58,0.06), transparent), radial-gradient(ellipse 60% 40% at 90% 100%, rgba(0,217,255,0.04), transparent); pointer-events: none; z-index: 0; }
     body::after { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E"); opacity: 0.04; pointer-events: none; z-index: 1; mix-blend-mode: overlay; }
     .layout { position: relative; z-index: 2; }
@@ -72,6 +66,9 @@
     .btn-ghost:hover { border-color: var(--ink); background: rgba(255,255,255,0.03); }
     .btn-arrow::after { content: '→'; font-family: var(--mono); transition: transform 0.2s; }
     .btn-arrow:hover::after { transform: translateX(4px); }
+    .btn-github { background: #fff; color: #0a0a0a; padding: 14px 22px; font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; border: none; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+    .btn-github:hover { background: var(--ink); transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--accent); }
+    .btn-github svg { width: 16px; height: 16px; }
     .wallet-pill { display: inline-flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--line-bright); background: var(--bg-card); font-family: var(--mono); font-size: 12px; color: var(--ink); transition: all 0.15s; }
     .wallet-pill:hover { border-color: var(--accent); }
     .wallet-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); }
@@ -138,12 +135,14 @@
     .input { background: var(--bg); border: 1px solid var(--line-bright); color: var(--ink); padding: 14px 16px; font-family: var(--mono); font-size: 13px; outline: none; transition: border-color 0.15s; width: 100%; }
     .input:focus { border-color: var(--accent); }
     .input::placeholder { color: var(--ink-3); }
-    .modal-footer { padding: 20px 32px 28px; border-top: 1px solid var(--line); display: flex; gap: 12px; justify-content: flex-end; }
+    .modal-footer { padding: 20px 32px 28px; border-top: 1px solid var(--line); display: flex; gap: 12px; justify-content: flex-end; align-items: center; }
     .btn-modal-close { background: transparent; color: var(--ink-2); border: 1px solid var(--line-bright); font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 12px 18px; cursor: pointer; transition: all 0.15s; }
     .btn-modal-close:hover { border-color: var(--ink); color: var(--ink); }
     .modal-help { font-family: var(--mono); font-size: 11px; color: var(--ink-3); margin-top: 12px; line-height: 1.6; }
     .modal-help a { color: var(--accent-3); text-decoration: none; }
     .modal-help a:hover { text-decoration: underline; }
+    .verified-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(212,255,58,0.08); border: 1px solid rgba(212,255,58,0.2); font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 16px; }
+    .verified-badge .check { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: var(--bg); font-weight: 900; font-size: 10px; }
     @media (max-width: 980px) {
       .hero-grid { grid-template-columns: 1fr; gap: 40px; }
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -208,7 +207,7 @@
           <div class="aside-row"><span>Block</span><span class="green">● Live</span></div>
           <div class="aside-row"><span>Quests</span><span>05 / 05</span></div>
           <div class="aside-row"><span>Gas</span><span>Sponsored</span></div>
-          <div class="aside-row"><span>Uptime</span><span>99.98%</span></div>
+          <div class="aside-row"><span>Auth</span><span class="green">● OAuth</span></div>
         </aside>
       </div>
     </section>
@@ -255,15 +254,8 @@
         <div class="modal-eyebrow" id="modal-eyebrow">QUEST 01</div>
         <div class="modal-title" id="modal-title">Submit <em>proof</em></div>
       </div>
-      <div class="modal-body">
-        <div class="modal-instructions" id="modal-instructions"></div>
-        <div class="input-group" id="modal-input-group">
-          <label class="input-label" id="modal-input-label">Proof</label>
-          <input type="text" class="input" id="modal-input" placeholder="" />
-        </div>
-        <div class="modal-help" id="modal-help"></div>
-      </div>
-      <div class="modal-footer">
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer" id="modal-footer">
         <button class="btn-modal-close" onclick="closeModal()">Cancel</button>
         <button class="btn btn-primary btn-arrow" id="modal-submit">Submit</button>
       </div>
@@ -277,7 +269,6 @@
     const BASE_SEPOLIA_CHAIN_ID = '0x14a34';
     const QUEST_MANAGER = '0xC8E3c576c6aBC7536f7B158220e146aEE44C0725';
 
-    // ABI for the user-callable function
     const QUEST_MANAGER_ABI = [
       'function completeOnchainQuest(string calldata questId) external',
       'function hasCompleted(string calldata questId, address player) external view returns (bool)'
@@ -285,57 +276,12 @@
 
     let userAddress = null;
 
-    // Quest definitions — IDs match contract string IDs via the relay's QUEST_MAP
     const QUESTS = [
-      {
-        id: 1, title: 'Deploy on Base',
-        desc: 'Complete an onchain transaction to claim this badge — proves you can interact with Base Sepolia.',
-        xp: 150, tags: ['ONCHAIN', 'BUILDER'],
-        type: 'self-sign',
-        questStringId: 'first-deploy',
-        instructions: `This quest is verified <strong>directly onchain</strong>. Click submit and approve the transaction in your wallet. The act of signing this tx is your proof of being onchain.`,
-        helpText: `Need testnet ETH? Get it from <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank">Alchemy Faucet</a>.`
-      },
-      {
-        id: 2, title: 'Discord OG',
-        desc: 'Active member of the Rialo Discord community. Submission goes to manual review.',
-        xp: 100, tags: ['SOCIAL', 'COMMUNITY'],
-        type: 'manual',
-        proofLabel: 'Discord Username',
-        proofPlaceholder: 'yourname#1234 or @yourname',
-        instructions: `Submit your Discord username. Submissions are <strong>manually reviewed</strong> within 24 hours. Make sure you've been active in the Rialo Discord before submitting.`,
-        helpText: `Active means meaningful contributions, not just joining.`
-      },
-      {
-        id: 3, title: 'First GitHub PR',
-        desc: 'Have at least one merged pull request on GitHub. Verified instantly via the GitHub API.',
-        xp: 200, tags: ['BUILDER', 'OPENSOURCE'],
-        type: 'auto',
-        proofLabel: 'GitHub Username',
-        proofPlaceholder: 'your-github-username',
-        instructions: `Submit your GitHub username. We'll check that you have at least <strong>one merged pull request</strong> on any public repo. Verified instantly.`,
-        helpText: `No merged PRs yet? Contribute to any open-source repo and come back.`
-      },
-      {
-        id: 4, title: 'Show Up IRL',
-        desc: 'Attend a Rialo community meetup in person and verify with a check-in code.',
-        xp: 350, tags: ['IRL', 'COMMUNITY'],
-        type: 'auto',
-        proofLabel: 'Event Code',
-        proofPlaceholder: 'RIALO-MEET-XXX',
-        instructions: `Enter the <strong>event code</strong> you received at the Rialo meetup. Each code can only be used once. Codes look like <code>RIALO-MEET-001</code>.`,
-        helpText: `Codes are distributed only at official Rialo events.`
-      },
-      {
-        id: 5, title: 'Thread Writer',
-        desc: 'Write quality content about Rialo on X or other platforms. Submission goes to manual review.',
-        xp: 175, tags: ['SOCIAL', 'CONTENT'],
-        type: 'manual',
-        proofLabel: 'Content URL',
-        proofPlaceholder: 'https://x.com/username/status/...',
-        instructions: `Post a thread about Rialo on X (or any platform) and paste the URL. Submissions are <strong>manually reviewed</strong> within 24 hours. Quality and originality matter.`,
-        helpText: `Tag <strong>@RialoHQ</strong> for faster review.`
-      }
+      { id: 1, title: 'Deploy on Base', desc: 'Complete an onchain transaction to claim this badge — proves you can interact with Base Sepolia.', xp: 150, tags: ['ONCHAIN', 'BUILDER'], type: 'self-sign', questStringId: 'first-deploy', instructions: `This quest is verified <strong>directly onchain</strong>. Click submit and approve the transaction in your wallet. The act of signing this tx is your proof of being onchain.`, helpText: `Need testnet ETH? Get it from <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank">Alchemy Faucet</a>.` },
+      { id: 2, title: 'Discord OG', desc: 'Active member of the Rialo Discord community. Submission goes to manual review.', xp: 100, tags: ['SOCIAL', 'COMMUNITY'], type: 'manual', proofLabel: 'Discord Username', proofPlaceholder: 'yourname#1234 or @yourname', instructions: `Submit your Discord username. Submissions are <strong>manually reviewed</strong> within 24 hours. Make sure you've been active in the Rialo Discord before submitting.`, helpText: `Active means meaningful contributions, not just joining.` },
+      { id: 3, title: 'First GitHub PR', desc: 'Sign in with GitHub to verify your account. We check for at least one merged pull request.', xp: 200, tags: ['BUILDER', 'OPENSOURCE'], type: 'github-oauth', instructions: `Sign in with GitHub to <strong>verify you own the account</strong>. We'll check that you have at least one merged pull request on a public repo.`, helpText: `We use the official GitHub OAuth flow — your credentials are never seen by us.` },
+      { id: 4, title: 'Show Up IRL', desc: 'Attend a Rialo community meetup in person and verify with a check-in code.', xp: 350, tags: ['IRL', 'COMMUNITY'], type: 'auto', proofLabel: 'Event Code', proofPlaceholder: 'RIALO-MEET-XXX', instructions: `Enter the <strong>event code</strong> you received at the Rialo meetup. Each code can only be used once. Codes look like <code>RIALO-MEET-001</code>.`, helpText: `Codes are distributed only at official Rialo events.` },
+      { id: 5, title: 'Thread Writer', desc: 'Write quality content about Rialo on X or other platforms. Submission goes to manual review.', xp: 175, tags: ['SOCIAL', 'CONTENT'], type: 'manual', proofLabel: 'Content URL', proofPlaceholder: 'https://x.com/username/status/...', instructions: `Post a thread about Rialo on X (or any platform) and paste the URL. Submissions are <strong>manually reviewed</strong> within 24 hours. Quality and originality matter.`, helpText: `Tag <strong>@RialoHQ</strong> for faster review.` }
     ];
 
     function showToast(message, type = 'info', duration = 4000) {
@@ -404,24 +350,56 @@
       document.getElementById('modal-title').innerHTML = quest.title.includes(' ')
         ? quest.title.replace(/(\w+)$/, '<em>$1</em>')
         : `<em>${quest.title}</em>`;
-      document.getElementById('modal-instructions').innerHTML = quest.instructions;
-      document.getElementById('modal-help').innerHTML = quest.helpText || '';
 
-      // For self-sign quests, hide the input field
-      const inputGroup = document.getElementById('modal-input-group');
-      if (quest.type === 'self-sign') {
-        inputGroup.style.display = 'none';
-        document.getElementById('modal-submit').textContent = 'Sign Transaction →';
+      const body = document.getElementById('modal-body');
+      const footer = document.getElementById('modal-footer');
+
+      if (quest.type === 'github-oauth') {
+        // Special UI for GitHub OAuth
+        body.innerHTML = `
+          <div class="verified-badge"><span class="check">✓</span>Verified via GitHub OAuth</div>
+          <div class="modal-instructions">${quest.instructions}</div>
+          <div class="modal-help">${quest.helpText}</div>
+        `;
+        footer.innerHTML = `
+          <button class="btn-modal-close" onclick="closeModal()">Cancel</button>
+          <button class="btn-github" id="modal-submit" onclick="connectGitHub()">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            Sign in with GitHub
+          </button>
+        `;
+      } else if (quest.type === 'self-sign') {
+        body.innerHTML = `
+          <div class="modal-instructions">${quest.instructions}</div>
+          <div class="modal-help">${quest.helpText || ''}</div>
+        `;
+        footer.innerHTML = `
+          <button class="btn-modal-close" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary btn-arrow" id="modal-submit" onclick="submitProof()">Sign Transaction</button>
+        `;
       } else {
-        inputGroup.style.display = 'flex';
-        document.getElementById('modal-input-label').textContent = quest.proofLabel;
-        document.getElementById('modal-input').placeholder = quest.proofPlaceholder;
-        document.getElementById('modal-input').value = '';
-        document.getElementById('modal-submit').textContent = 'Submit →';
+        body.innerHTML = `
+          <div class="modal-instructions">${quest.instructions}</div>
+          <div class="input-group">
+            <label class="input-label">${quest.proofLabel}</label>
+            <input type="text" class="input" id="modal-input" placeholder="${quest.proofPlaceholder}" />
+          </div>
+          <div class="modal-help">${quest.helpText || ''}</div>
+        `;
+        footer.innerHTML = `
+          <button class="btn-modal-close" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary btn-arrow" id="modal-submit" onclick="submitProof()">Submit</button>
+        `;
+        setTimeout(() => {
+          const input = document.getElementById('modal-input');
+          if (input) {
+            input.focus();
+            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitProof(); });
+          }
+        }, 100);
       }
 
       document.getElementById('modal').classList.add('active');
-      if (quest.type !== 'self-sign') setTimeout(() => document.getElementById('modal-input').focus(), 100);
     }
 
     function closeModal() {
@@ -431,8 +409,12 @@
 
     document.getElementById('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
-    document.getElementById('modal-submit').addEventListener('click', submitProof);
-    document.getElementById('modal-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') submitProof(); });
+
+    // GitHub OAuth flow — redirect to relay's /api/github-auth with wallet
+    function connectGitHub() {
+      if (!userAddress) { showToast('Connect your wallet first', 'error'); return; }
+      window.location.href = `${RELAY_URL}/api/github-auth?wallet=${userAddress}`;
+    }
 
     async function submitProof() {
       const quest = QUESTS.find(q => q.id === activeQuestId);
@@ -442,7 +424,6 @@
       const originalText = submitBtn.textContent;
       const questBtn = document.querySelector(`[data-quest-id="${activeQuestId}"]`);
 
-      // Self-sign path (Quest 1: Deploy on Base)
       if (quest.type === 'self-sign') {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Signing...';
@@ -452,7 +433,6 @@
           const signer = await ethersProvider.getSigner();
           const contract = new ethers.Contract(QUEST_MANAGER, QUEST_MANAGER_ABI, signer);
 
-          // Check if already done
           const done = await contract.hasCompleted(quest.questStringId, userAddress);
           if (done) {
             showToast('You\'ve already completed this quest', 'warning');
@@ -470,19 +450,15 @@
           closeModal();
         } catch (err) {
           console.error(err);
-          if (err.code === 4001 || err.code === 'ACTION_REJECTED') {
-            showToast('Transaction rejected', 'error');
-          } else {
-            showToast(`<strong>Failed</strong><br/>${err.shortMessage || err.message}`, 'error', 5000);
-          }
+          if (err.code === 4001 || err.code === 'ACTION_REJECTED') showToast('Transaction rejected', 'error');
+          else showToast(`<strong>Failed</strong><br/>${err.shortMessage || err.message}`, 'error', 5000);
           submitBtn.disabled = false;
           submitBtn.textContent = originalText;
         }
         return;
       }
 
-      // Relay path (Quests 2-5)
-      const proof = document.getElementById('modal-input').value.trim();
+      const proof = document.getElementById('modal-input')?.value.trim();
       if (!proof) { showToast('Please enter your proof', 'error'); return; }
 
       submitBtn.disabled = true;
@@ -536,6 +512,7 @@
     document.getElementById('connect-btn').addEventListener('click', connectWallet);
     renderQuests();
 
+    // Auto-detect existing wallet connection
     window.addEventListener('load', async () => {
       const provider = getProvider();
       if (provider) {
@@ -543,6 +520,31 @@
           const accounts = await provider.request({ method: 'eth_accounts' });
           if (accounts?.length > 0) { userAddress = accounts[0]; renderWallet(); }
         } catch (e) {}
+      }
+
+      // Handle GitHub OAuth callback messages
+      const params = new URLSearchParams(window.location.search);
+      const ghStatus = params.get('github_status');
+      const ghMsg = params.get('github_msg');
+      const tx = params.get('tx');
+      const githubUser = params.get('github');
+
+      if (ghStatus) {
+        if (ghStatus === 'success') {
+          const txLink = tx ? `<br/><a href="https://sepolia.basescan.org/tx/${tx}" target="_blank">View transaction ↗</a>` : '';
+          showToast(`<strong>GitHub verified · @${githubUser || 'user'}</strong><br/>${ghMsg}${txLink}`, 'success', 8000);
+          // Mark Quest 3 as complete in UI
+          setTimeout(() => {
+            const btn = document.querySelector('[data-quest-id="3"]');
+            if (btn) { btn.textContent = '✓ Completed'; btn.classList.add('completed'); btn.disabled = true; }
+          }, 500);
+        } else if (ghStatus === 'info') {
+          showToast(`<strong>${ghMsg}</strong>`, 'warning', 6000);
+        } else {
+          showToast(`<strong>GitHub verification failed</strong><br/>${ghMsg}`, 'error', 6000);
+        }
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
       }
     });
   </script>

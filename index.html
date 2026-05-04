@@ -61,6 +61,7 @@
     .aside-row span:first-child { color: var(--ink-3); }
     .aside-row span:last-child { color: var(--ink); font-weight: 500; }
     .aside-row .green { color: var(--success); }
+    .aside-row .accent-val { color: var(--accent); }
     .btn { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 14px 22px; border: none; cursor: pointer; transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 10px; position: relative; overflow: hidden; text-decoration: none; }
     .btn-primary { background: var(--accent); color: #0a0a0a; }
     .btn-primary:hover { background: var(--ink); transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--accent); }
@@ -92,8 +93,9 @@
     .quest-row:hover { background: var(--bg-card); }
     .quest-row::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); transform: scaleY(0); transition: transform 0.2s ease; }
     .quest-row:hover::before { transform: scaleY(1); }
+    .quest-row.completed::before { transform: scaleY(1); background: var(--success); }
     .quest-num { font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.1em; }
-    .quest-info-title { font-family: var(--sans); font-weight: 500; font-size: 19px; letter-spacing: -0.02em; margin-bottom: 6px; }
+    .quest-info-title { font-family: var(--sans); font-weight: 500; font-size: 19px; letter-spacing: -0.02em; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
     .quest-info-desc { font-size: 13px; color: var(--ink-3); line-height: 1.5; max-width: 540px; }
     .quest-tags { display: flex; gap: 8px; flex-wrap: wrap; }
     .tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 10px; border: 1px solid var(--line-bright); color: var(--ink-2); }
@@ -104,8 +106,9 @@
     .complete-btn { padding: 11px 16px; background: transparent; border: 1px solid var(--line-bright); color: var(--ink); font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
     .complete-btn:hover:not(:disabled) { background: var(--accent); color: #0a0a0a; border-color: var(--accent); }
     .complete-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .complete-btn.completed { background: rgba(74,222,128,0.1); border-color: var(--success); color: var(--success); }
+    .complete-btn.completed { background: rgba(74,222,128,0.1); border-color: var(--success); color: var(--success); cursor: default; opacity: 1; }
     .complete-btn.pending { background: rgba(251,191,36,0.1); border-color: var(--warning); color: var(--warning); }
+    .completed-badge { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--success); color: var(--bg); font-weight: 900; font-size: 10px; }
     .footer { border-top: 1px solid var(--line); padding: 40px 32px; max-width: 1440px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 32px; font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; }
     .footer a { color: var(--ink-2); text-decoration: none; transition: color 0.15s; }
     .footer a:hover { color: var(--accent); }
@@ -145,6 +148,10 @@
     .modal-help a:hover { text-decoration: underline; }
     .verified-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(212,255,58,0.08); border: 1px solid rgba(212,255,58,0.2); font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 16px; }
     .verified-badge .check { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: var(--bg); font-weight: 900; font-size: 10px; }
+    .completed-modal-state { text-align: center; padding: 12px 0; }
+    .completed-modal-state .check-big { width: 56px; height: 56px; border-radius: 50%; background: rgba(74,222,128,0.12); border: 1px solid var(--success); display: inline-flex; align-items: center; justify-content: center; color: var(--success); font-weight: 900; font-size: 24px; margin-bottom: 16px; }
+    .completed-modal-state h3 { font-family: var(--sans); font-weight: 400; font-size: 22px; letter-spacing: -0.02em; margin-bottom: 8px; }
+    .completed-modal-state p { font-size: 13px; color: var(--ink-2); line-height: 1.6; max-width: 380px; margin: 0 auto; }
     @media (max-width: 980px) {
       .hero-grid { grid-template-columns: 1fr; gap: 40px; }
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -207,9 +214,10 @@
           <div class="aside-label">// SYSTEM STATUS</div>
           <div class="aside-row"><span>Network</span><span>Base Sepolia</span></div>
           <div class="aside-row"><span>Block</span><span class="green">● Live</span></div>
-          <div class="aside-row"><span>Quests</span><span>05 / 05</span></div>
+          <div class="aside-row"><span>Quests Available</span><span>05 / 05</span></div>
+          <div class="aside-row"><span>Your Progress</span><span class="accent-val" id="progress-stat">— / 05</span></div>
+          <div class="aside-row"><span>Your XP</span><span class="accent-val" id="xp-stat">—</span></div>
           <div class="aside-row"><span>Gas</span><span>Sponsored</span></div>
-          <div class="aside-row"><span>Auth</span><span class="green">● OAuth</span></div>
         </aside>
       </div>
     </section>
@@ -271,6 +279,7 @@
     const RELAY_URL = 'https://rialo-quest-9ny7.vercel.app';
     const BASE_SEPOLIA_CHAIN_ID = '0x14a34';
     const QUEST_MANAGER = '0xC8E3c576c6aBC7536f7B158220e146aEE44C0725';
+    const ALCHEMY_RPC = 'https://sepolia.base.org';
 
     const QUEST_MANAGER_ABI = [
       'function completeOnchainQuest(string calldata questId) external',
@@ -278,14 +287,18 @@
     ];
 
     let userAddress = null;
+    let walletProvider = null; // store the wallet provider explicitly
 
     const QUESTS = [
       { id: 1, title: 'Deploy on Base', desc: 'Complete an onchain transaction to claim this badge — proves you can interact with Base Sepolia.', xp: 150, tags: ['ONCHAIN', 'BUILDER'], type: 'self-sign', questStringId: 'first-deploy', instructions: `This quest is verified <strong>directly onchain</strong>. Click submit and approve the transaction in your wallet. The act of signing this tx is your proof of being onchain.`, helpText: `Need testnet ETH? Get it from <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank">Alchemy Faucet</a>.` },
-      { id: 2, title: 'Discord OG', desc: 'Active member of the Rialo Discord community. Submission goes to manual review.', xp: 100, tags: ['SOCIAL', 'COMMUNITY'], type: 'manual', proofLabel: 'Discord Username', proofPlaceholder: 'yourname#1234 or @yourname', instructions: `Submit your Discord username. Submissions are <strong>manually reviewed</strong> within 24 hours. Make sure you've been active in the Rialo Discord before submitting.`, helpText: `Active means meaningful contributions, not just joining.` },
-      { id: 3, title: 'GitHub Builder', desc: 'Sign in with GitHub to verify you build in public. Multiple ways to qualify.', xp: 200, tags: ['BUILDER', 'OPENSOURCE'], type: 'github-oauth', instructions: `Sign in with GitHub to <strong>verify you own the account</strong>. You'll qualify if you have <strong>any of these</strong>: a merged PR · a public repo about Rialo · a public repo with 5+ commits.`, helpText: `We use the official GitHub OAuth flow — your credentials are never seen by us.` },
-      { id: 4, title: 'Show Up IRL', desc: 'Attend a Rialo community meetup in person and verify with the host\'s event code.', xp: 350, tags: ['IRL', 'COMMUNITY'], type: 'auto', proofLabel: 'Event Code', proofPlaceholder: 'RIALO-XXXX-XXXX', instructions: `Enter the <strong>event code</strong> the host gave you. Each code can only be used once. Codes look like <code>RIALO-1234-AB12</code>.`, helpText: `Hosting an event? <a href="/host.html">Create your own codes ↗</a>` },
-      { id: 5, title: 'Thread Writer', desc: 'Write quality content about Rialo on X or other platforms. Submission goes to manual review.', xp: 175, tags: ['SOCIAL', 'CONTENT'], type: 'manual', proofLabel: 'Content URL', proofPlaceholder: 'https://x.com/username/status/...', instructions: `Post a thread about Rialo on X (or any platform) and paste the URL. Submissions are <strong>manually reviewed</strong> within 24 hours. Quality and originality matter.`, helpText: `Tag <strong>@RialoHQ</strong> for faster review.` }
+      { id: 2, title: 'Discord OG', desc: 'Active member of the Rialo Discord community. Submission goes to manual review.', xp: 100, tags: ['SOCIAL', 'COMMUNITY'], type: 'manual', questStringId: 'discord-og', proofLabel: 'Discord Username', proofPlaceholder: 'yourname#1234 or @yourname', instructions: `Submit your Discord username. Submissions are <strong>manually reviewed</strong> within 24 hours. Make sure you've been active in the Rialo Discord before submitting.`, helpText: `Active means meaningful contributions, not just joining.` },
+      { id: 3, title: 'GitHub Builder', desc: 'Sign in with GitHub to verify you build in public. Multiple ways to qualify.', xp: 200, tags: ['BUILDER', 'OPENSOURCE'], type: 'github-oauth', questStringId: 'github-first-pr', instructions: `Sign in with GitHub to <strong>verify you own the account</strong>. You'll qualify if you have <strong>any of these</strong>: a merged PR · a public repo about Rialo · a public repo with 5+ commits.`, helpText: `We use the official GitHub OAuth flow — your credentials are never seen by us.` },
+      { id: 4, title: 'Show Up IRL', desc: 'Attend a Rialo community meetup in person and verify with the host\'s event code.', xp: 350, tags: ['IRL', 'COMMUNITY'], type: 'auto', questStringId: 'first-irl-event', proofLabel: 'Event Code', proofPlaceholder: 'RIALO-XXXX-XXXX', instructions: `Enter the <strong>event code</strong> the host gave you. Each code can only be used once. Codes look like <code>RIALO-1234-AB12</code>.`, helpText: `Hosting an event? <a href="/host.html">Create your own codes ↗</a>` },
+      { id: 5, title: 'Thread Writer', desc: 'Write quality content about Rialo on X or other platforms. Submission goes to manual review.', xp: 175, tags: ['SOCIAL', 'CONTENT'], type: 'manual', questStringId: 'thread-writer', proofLabel: 'Content URL', proofPlaceholder: 'https://x.com/username/status/...', instructions: `Post a thread about Rialo on X (or any platform) and paste the URL. Submissions are <strong>manually reviewed</strong> within 24 hours. Quality and originality matter.`, helpText: `Tag <strong>@RialoHQ</strong> for faster review.` }
     ];
+
+    // Track completion state in memory
+    const completedQuests = new Set();
 
     function showToast(message, type = 'info', duration = 4000) {
       const c = document.getElementById('toast-container');
@@ -308,19 +321,19 @@
     }
 
     async function connectWallet() {
-      const provider = getProvider();
-      if (!provider) { showToast('No wallet detected. Install OKX Wallet or MetaMask.', 'error'); return; }
+      walletProvider = getProvider();
+      if (!walletProvider) { showToast('No wallet detected. Install OKX Wallet or MetaMask.', 'error'); return; }
       try {
-        const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        const accounts = await walletProvider.request({ method: 'eth_requestAccounts' });
         if (!accounts?.length) throw new Error('No accounts returned');
         userAddress = accounts[0];
-        const chainId = await provider.request({ method: 'eth_chainId' });
+        const chainId = await walletProvider.request({ method: 'eth_chainId' });
         if (chainId !== BASE_SEPOLIA_CHAIN_ID) {
           try {
-            await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_SEPOLIA_CHAIN_ID }] });
+            await walletProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_SEPOLIA_CHAIN_ID }] });
           } catch (e) {
             if (e.code === 4902 || e.code === -32603) {
-              await provider.request({
+              await walletProvider.request({
                 method: 'wallet_addEthereumChain',
                 params: [{ chainId: BASE_SEPOLIA_CHAIN_ID, chainName: 'Base Sepolia', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://sepolia.base.org'], blockExplorerUrls: ['https://sepolia.basescan.org'] }]
               });
@@ -329,8 +342,9 @@
         }
         renderWallet();
         showToast('Wallet connected successfully', 'success');
-        provider.on?.('accountsChanged', (accs) => { if (accs.length === 0) location.reload(); else { userAddress = accs[0]; renderWallet(); } });
-        provider.on?.('chainChanged', () => location.reload());
+        await loadCompletionState();
+        walletProvider.on?.('accountsChanged', (accs) => { if (accs.length === 0) location.reload(); else { userAddress = accs[0]; renderWallet(); loadCompletionState(); } });
+        walletProvider.on?.('chainChanged', () => location.reload());
       } catch (err) {
         if (err.code === 4001) showToast('Connection rejected', 'error');
         else showToast(`Failed: ${err.message || 'Unknown error'}`, 'error');
@@ -339,6 +353,53 @@
 
     function renderWallet() {
       document.getElementById('wallet-section').innerHTML = `<div class="wallet-pill"><span class="dot"></span><span>${shortenAddress(userAddress)}</span></div>`;
+    }
+
+    // Read on-chain completion state for ALL quests at once
+    async function loadCompletionState() {
+      if (!userAddress) return;
+      try {
+        const readProvider = new ethers.JsonRpcProvider(ALCHEMY_RPC);
+        const contract = new ethers.Contract(QUEST_MANAGER, QUEST_MANAGER_ABI, readProvider);
+        const checks = await Promise.all(QUESTS.map(q =>
+          contract.hasCompleted(q.questStringId, userAddress).catch(() => false)
+        ));
+        completedQuests.clear();
+        checks.forEach((done, i) => { if (done) completedQuests.add(QUESTS[i].id); });
+        updateQuestsUI();
+        updateSystemStatus();
+      } catch (err) {
+        console.error('Failed to load completion state:', err);
+      }
+    }
+
+    function updateQuestsUI() {
+      QUESTS.forEach(q => {
+        const row = document.querySelector(`[data-quest-row="${q.id}"]`);
+        const btn = document.querySelector(`[data-quest-id="${q.id}"]`);
+        if (!btn) return;
+        if (completedQuests.has(q.id)) {
+          btn.textContent = '✓ Completed';
+          btn.classList.add('completed');
+          btn.disabled = false; // Keep clickable to view info
+          if (row) row.classList.add('completed');
+          // Add small badge to title
+          const title = document.querySelector(`[data-quest-title="${q.id}"]`);
+          if (title && !title.querySelector('.completed-badge')) {
+            const badge = document.createElement('span');
+            badge.className = 'completed-badge';
+            badge.textContent = '✓';
+            title.appendChild(badge);
+          }
+        }
+      });
+    }
+
+    function updateSystemStatus() {
+      const completedCount = completedQuests.size;
+      const totalXP = QUESTS.filter(q => completedQuests.has(q.id)).reduce((sum, q) => sum + q.xp, 0);
+      document.getElementById('progress-stat').textContent = `${String(completedCount).padStart(2, '0')} / 05`;
+      document.getElementById('xp-stat').textContent = totalXP > 0 ? `${totalXP} XP` : '0 XP';
     }
 
     let activeQuestId = null;
@@ -355,6 +416,23 @@
 
       const body = document.getElementById('modal-body');
       const footer = document.getElementById('modal-footer');
+
+      // If already completed, show completed state
+      if (completedQuests.has(questId)) {
+        body.innerHTML = `
+          <div class="completed-modal-state">
+            <div class="check-big">✓</div>
+            <h3>Quest already completed</h3>
+            <p>You earned <strong style="color:var(--accent)">+${quest.xp} XP</strong> for "${quest.title}". Each quest can only be claimed once per wallet.</p>
+          </div>
+        `;
+        footer.innerHTML = `
+          <button class="btn-modal-close" onclick="closeModal()">Close</button>
+          <button class="btn btn-primary btn-arrow" onclick="closeModal(); document.getElementById('quests').scrollIntoView({behavior:'smooth'})">Try Another Quest</button>
+        `;
+        document.getElementById('modal').classList.add('active');
+        return;
+      }
 
       if (quest.type === 'github-oauth') {
         body.innerHTML = `
@@ -424,11 +502,30 @@
       const originalText = submitBtn.textContent;
       const questBtn = document.querySelector(`[data-quest-id="${activeQuestId}"]`);
 
+      // ─── SELF-SIGN PATH (Quest 1: Deploy on Base) ───
       if (quest.type === 'self-sign') {
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Signing...';
+        submitBtn.textContent = 'Connecting wallet...';
         try {
-          const provider = getProvider();
+          // Reuse the already-stored walletProvider, fall back to detecting again
+          const provider = walletProvider || getProvider();
+          if (!provider) throw new Error('No wallet provider found. Disconnect and reconnect.');
+
+          // Make sure accounts are still authorized
+          const accounts = await provider.request({ method: 'eth_accounts' });
+          if (!accounts?.length) {
+            await provider.request({ method: 'eth_requestAccounts' });
+          }
+
+          // Verify chain
+          const chainId = await provider.request({ method: 'eth_chainId' });
+          if (chainId !== BASE_SEPOLIA_CHAIN_ID) {
+            await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_SEPOLIA_CHAIN_ID }] });
+          }
+
+          submitBtn.textContent = 'Awaiting signature...';
+
+          // Build ethers from the same provider (not window.ethereum which may be different)
           const ethersProvider = new ethers.BrowserProvider(provider);
           const signer = await ethersProvider.getSigner();
           const contract = new ethers.Contract(QUEST_MANAGER, QUEST_MANAGER_ABI, signer);
@@ -436,27 +533,41 @@
           const done = await contract.hasCompleted(quest.questStringId, userAddress);
           if (done) {
             showToast('You\'ve already completed this quest', 'warning');
+            completedQuests.add(quest.id);
+            updateQuestsUI();
+            updateSystemStatus();
             submitBtn.disabled = false;
             submitBtn.textContent = originalText;
+            closeModal();
             return;
           }
 
+          // Send transaction — wallet should pop up here
           const tx = await contract.completeOnchainQuest(quest.questStringId);
           showToast('Transaction sent · waiting for confirmation...', 'info', 3000);
+          submitBtn.textContent = 'Confirming...';
           const receipt = await tx.wait();
+
           const txLink = `<br/><a href="https://sepolia.basescan.org/tx/${receipt.hash}" target="_blank">View transaction ↗</a>`;
           showToast(`<strong>Quest #${quest.id} complete · +${quest.xp} XP</strong>${txLink}`, 'success', 6000);
-          if (questBtn) { questBtn.textContent = '✓ Completed'; questBtn.classList.add('completed'); questBtn.disabled = true; }
+          completedQuests.add(quest.id);
+          updateQuestsUI();
+          updateSystemStatus();
           closeModal();
         } catch (err) {
-          if (err.code === 4001 || err.code === 'ACTION_REJECTED') showToast('Transaction rejected', 'error');
-          else showToast(`<strong>Failed</strong><br/>${err.shortMessage || err.message}`, 'error', 5000);
+          console.error('self-sign error:', err);
+          if (err.code === 4001 || err.code === 'ACTION_REJECTED') {
+            showToast('Transaction rejected', 'error');
+          } else {
+            showToast(`<strong>Failed</strong><br/>${err.shortMessage || err.message || 'Unknown error'}`, 'error', 5000);
+          }
           submitBtn.disabled = false;
           submitBtn.textContent = originalText;
         }
         return;
       }
 
+      // ─── RELAY PATH (Quests 2-5) ───
       const proof = document.getElementById('modal-input')?.value.trim();
       if (!proof) { showToast('Please enter your proof', 'error'); return; }
 
@@ -474,12 +585,14 @@
         if (res.ok && data.success) {
           if (data.pending) {
             showToast(`<strong>Submission received</strong><br/>${data.message}`, 'warning', 6000);
-            if (questBtn) { questBtn.textContent = '⏳ Pending'; questBtn.classList.add('pending'); questBtn.disabled = true; }
+            if (questBtn) { questBtn.textContent = '⏳ Pending'; questBtn.classList.add('pending'); }
           } else {
             const txLink = data.explorerUrl ? `<br/><a href="${data.explorerUrl}" target="_blank">View transaction ↗</a>` : '';
             const eventLine = data.eventName ? `<br/><span style="opacity:0.7">${data.eventName}</span>` : '';
             showToast(`<strong>Quest #${activeQuestId} complete · +${quest.xp} XP</strong>${eventLine}${txLink}`, 'success', 6000);
-            if (questBtn) { questBtn.textContent = '✓ Completed'; questBtn.classList.add('completed'); questBtn.disabled = true; }
+            completedQuests.add(activeQuestId);
+            updateQuestsUI();
+            updateSystemStatus();
           }
           closeModal();
         } else {
@@ -494,10 +607,10 @@
 
     function renderQuests() {
       document.getElementById('quest-list').innerHTML = QUESTS.map(q => `
-        <div class="quest-row">
+        <div class="quest-row" data-quest-row="${q.id}">
           <div class="quest-num">Q.0${q.id}</div>
           <div class="quest-info">
-            <div class="quest-info-title">${q.title}</div>
+            <div class="quest-info-title" data-quest-title="${q.id}">${q.title}</div>
             <div class="quest-info-desc">${q.desc}</div>
           </div>
           <div class="quest-tags">${q.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
@@ -510,13 +623,19 @@
 
     document.getElementById('connect-btn').addEventListener('click', connectWallet);
     renderQuests();
+    updateSystemStatus(); // shows 0/05 even before wallet connect
 
     window.addEventListener('load', async () => {
       const provider = getProvider();
       if (provider) {
         try {
           const accounts = await provider.request({ method: 'eth_accounts' });
-          if (accounts?.length > 0) { userAddress = accounts[0]; renderWallet(); }
+          if (accounts?.length > 0) {
+            walletProvider = provider;
+            userAddress = accounts[0];
+            renderWallet();
+            await loadCompletionState();
+          }
         } catch (e) {}
       }
 
@@ -530,10 +649,8 @@
         if (ghStatus === 'success') {
           const txLink = tx ? `<br/><a href="https://sepolia.basescan.org/tx/${tx}" target="_blank">View transaction ↗</a>` : '';
           showToast(`<strong>GitHub verified · @${githubUser || 'user'}</strong><br/>${ghMsg}${txLink}`, 'success', 8000);
-          setTimeout(() => {
-            const btn = document.querySelector('[data-quest-id="3"]');
-            if (btn) { btn.textContent = '✓ Completed'; btn.classList.add('completed'); btn.disabled = true; }
-          }, 500);
+          completedQuests.add(3);
+          setTimeout(() => { updateQuestsUI(); updateSystemStatus(); }, 500);
         } else if (ghStatus === 'info') {
           showToast(`<strong>${ghMsg}</strong>`, 'warning', 6000);
         } else {

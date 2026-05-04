@@ -1,9 +1,11 @@
 // /api/admin-approve.js
-// Admin endpoint to approve pending Discord/X submissions
+// Admin endpoint to list, approve, and reject pending submissions.
+// Auth: X-Admin-Secret header must match ADMIN_SECRET env var.
 
 const { createWalletClient, createPublicClient, http, parseAbi } = require('viem');
 const { privateKeyToAccount } = require('viem/accounts');
 const { baseSepolia } = require('viem/chains');
+const { createClient } = require('redis');
 
 const QUEST_MANAGER_ADDRESS = process.env.NEXT_PUBLIC_QUEST_MANAGER_CONTRACT;
 const ALCHEMY_URL = process.env.NEXT_PUBLIC_ALCHEMY_URL || 'https://sepolia.base.org';
@@ -13,8 +15,14 @@ const QUEST_MANAGER_ABI = parseAbi([
   'function hasCompleted(string calldata questId, address player) external view returns (bool)'
 ]);
 
-const completeQuest = require('./complete-quest');
-const pendingSubmissions = completeQuest.pendingSubmissions || [];
+let redisClient = null;
+async function getRedis() {
+  if (redisClient && redisClient.isReady) return redisClient;
+  redisClient = createClient({ url: process.env.REDIS_URL });
+  redisClient.on('error', (err) => console.error('Redis error:', err));
+  await redisClient.connect();
+  return redisClient;
+}
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,37 +31,69 @@ module.exports = async (req, res) => {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  // Auth check
   const adminSecret = req.headers['x-admin-secret'];
   if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  if (req.method === 'GET') {
-    return res.status(200).json({
-      pending: pendingSubmissions.filter(s => s.status === 'pending'),
-      total: pendingSubmissions.length
-    });
-  }
+  try {
+    const redis = await getRedis();
 
-  if (req.method === 'POST') {
-    try {
+    // ─── GET: list submissions ─────────────────────────
+    if (req.method === 'GET') {
+      const filter = (req.query.filter || 'pending').toLowerCase();
+
+      // Get all pending submission IDs (newest first)
+      const pendingIds = await redis.zRange('pending-submissions', 0, -1, { REV: true });
+      const historyIds = await redis.zRange('history-submissions', 0, -1, { REV: true });
+
+      let allIds = [];
+      if (filter === 'pending') allIds = pendingIds;
+      else if (filter === 'history') allIds = historyIds;
+      else allIds = [...pendingIds, ...historyIds];
+
+      const submissions = [];
+      for (const id of allIds.slice(0, 100)) {
+        const json = await redis.get(`submission:${id}`);
+        if (json) submissions.push(JSON.parse(json));
+      }
+
+      return res.status(200).json({
+        submissions,
+        counts: {
+          pending: pendingIds.length,
+          history: historyIds.length
+        }
+      });
+    }
+
+    // ─── POST: approve or reject ───────────────────────
+    if (req.method === 'POST') {
       const { submissionId, action } = req.body || {};
       if (!submissionId || !['approve', 'reject'].includes(action)) {
         return res.status(400).json({ error: 'submissionId and action (approve|reject) required' });
       }
 
-      const sub = pendingSubmissions.find(s => s.id === submissionId);
-      if (!sub) return res.status(404).json({ error: 'Submission not found' });
+      const subJson = await redis.get(`submission:${submissionId}`);
+      if (!subJson) return res.status(404).json({ error: 'Submission not found' });
+      const sub = JSON.parse(subJson);
+
       if (sub.status !== 'pending') {
         return res.status(400).json({ error: `Already ${sub.status}` });
       }
 
       if (action === 'reject') {
         sub.status = 'rejected';
-        return res.status(200).json({ success: true, status: 'rejected' });
+        sub.reviewedAt = new Date().toISOString();
+        await redis.set(`submission:${submissionId}`, JSON.stringify(sub));
+        // Move from pending to history
+        await redis.zRem('pending-submissions', submissionId);
+        await redis.zAdd('history-submissions', { score: Date.now(), value: submissionId });
+        return res.status(200).json({ success: true, status: 'rejected', submission: sub });
       }
 
-      // Approve → mint onchain
+      // ── Approve → mint onchain ──
       const publicClient = createPublicClient({ chain: baseSepolia, transport: http(ALCHEMY_URL) });
       const alreadyDone = await publicClient.readContract({
         address: QUEST_MANAGER_ADDRESS,
@@ -61,14 +101,20 @@ module.exports = async (req, res) => {
         functionName: 'hasCompleted',
         args: [sub.questStringId, sub.userAddress]
       });
+
       if (alreadyDone) {
         sub.status = 'already_completed';
-        return res.status(200).json({ success: false, error: 'Already completed onchain' });
+        sub.reviewedAt = new Date().toISOString();
+        await redis.set(`submission:${submissionId}`, JSON.stringify(sub));
+        await redis.zRem('pending-submissions', submissionId);
+        await redis.zAdd('history-submissions', { score: Date.now(), value: submissionId });
+        return res.status(200).json({ success: false, error: 'Already completed onchain', submission: sub });
       }
 
       const pk = process.env.RELAYER_PRIVATE_KEY.startsWith('0x')
         ? process.env.RELAYER_PRIVATE_KEY
         : `0x${process.env.RELAYER_PRIVATE_KEY}`;
+
       const account = privateKeyToAccount(pk);
       const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http(ALCHEMY_URL) });
 
@@ -81,18 +127,24 @@ module.exports = async (req, res) => {
 
       sub.status = 'approved';
       sub.txHash = txHash;
+      sub.reviewedAt = new Date().toISOString();
+      await redis.set(`submission:${submissionId}`, JSON.stringify(sub));
+      await redis.zRem('pending-submissions', submissionId);
+      await redis.zAdd('history-submissions', { score: Date.now(), value: submissionId });
 
       return res.status(200).json({
         success: true,
         status: 'approved',
         txHash,
-        explorerUrl: `https://sepolia.basescan.org/tx/${txHash}`
+        explorerUrl: `https://sepolia.basescan.org/tx/${txHash}`,
+        submission: sub
       });
-    } catch (err) {
-      console.error('admin-approve error:', err);
-      return res.status(500).json({ error: err.message });
     }
-  }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
+
+  } catch (err) {
+    console.error('admin-approve error:', err);
+    return res.status(500).json({ error: err.message });
+  }
 };

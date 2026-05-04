@@ -1,10 +1,12 @@
 // /api/complete-quest.js
 // Verifies quest completion and mints onchain via QuestManager.completeQuestAsRelayer
+// Pending submissions (Discord/Thread Writer) persist in Redis.
 
 const { createWalletClient, createPublicClient, http, parseAbi, isAddress } = require('viem');
 const { privateKeyToAccount } = require('viem/accounts');
 const { baseSepolia } = require('viem/chains');
 const { createClient } = require('redis');
+const crypto = require('crypto');
 
 const QUEST_MANAGER_ADDRESS = process.env.NEXT_PUBLIC_QUEST_MANAGER_CONTRACT;
 const ALCHEMY_URL = process.env.NEXT_PUBLIC_ALCHEMY_URL || 'https://sepolia.base.org';
@@ -15,11 +17,11 @@ const QUEST_MANAGER_ABI = parseAbi([
 ]);
 
 const QUEST_MAP = {
-  1: { id: 'first-deploy',     trigger: 'onchain-self', xp: 150 },
-  2: { id: 'discord-og',       trigger: 'manual',       xp: 100 },
-  3: { id: 'github-first-pr',  trigger: 'github-oauth', xp: 200 }, // Use OAuth route instead
-  4: { id: 'first-irl-event',  trigger: 'irl-code',     xp: 350 },
-  5: { id: 'thread-writer',    trigger: 'manual',       xp: 175 }
+  1: { id: 'first-deploy',     trigger: 'onchain-self', xp: 150, title: 'Deploy on Base' },
+  2: { id: 'discord-og',       trigger: 'manual',       xp: 100, title: 'Discord OG' },
+  3: { id: 'github-first-pr',  trigger: 'github-oauth', xp: 200, title: 'GitHub Builder' },
+  4: { id: 'first-irl-event',  trigger: 'irl-code',     xp: 350, title: 'Show Up IRL' },
+  5: { id: 'thread-writer',    trigger: 'manual',       xp: 175, title: 'Thread Writer' }
 };
 
 let redisClient = null;
@@ -31,9 +33,7 @@ async function getRedis() {
   return redisClient;
 }
 
-const pendingSubmissions = [];
-
-// IRL code verification — now uses Redis instead of hardcoded list
+// Verify IRL code from Redis
 async function verifyIRLCode(code, userAddress) {
   if (!code) return { ok: false, reason: 'Code required' };
   const normalized = code.trim().toUpperCase();
@@ -41,25 +41,18 @@ async function verifyIRLCode(code, userAddress) {
   try {
     const redis = await getRedis();
     const codeJson = await redis.get(`event-code:${normalized}`);
-    if (!codeJson) {
-      return { ok: false, reason: 'Invalid event code' };
-    }
+    if (!codeJson) return { ok: false, reason: 'Invalid event code' };
     const codeData = JSON.parse(codeJson);
-    if (codeData.used) {
-      return { ok: false, reason: 'This code has already been used' };
-    }
+    if (codeData.used) return { ok: false, reason: 'This code has already been used' };
 
-    // Get event details for context
     const eventJson = await redis.get(`event:${codeData.eventId}`);
     const event = eventJson ? JSON.parse(eventJson) : null;
 
-    // Mark code as used
     codeData.used = true;
     codeData.usedBy = userAddress.toLowerCase();
     codeData.usedAt = new Date().toISOString();
     await redis.set(`event-code:${normalized}`, JSON.stringify(codeData));
 
-    // Increment claim count on event
     if (event) {
       event.claimsCount = (event.claimsCount || 0) + 1;
       await redis.set(`event:${codeData.eventId}`, JSON.stringify(event));
@@ -67,33 +60,49 @@ async function verifyIRLCode(code, userAddress) {
 
     return {
       ok: true,
-      message: event ? `Verified attendance at "${event.name}"` : `Code accepted`,
+      message: event ? `Verified attendance at "${event.name}"` : 'Code accepted',
       eventName: event?.name
     };
   } catch (err) {
-    console.error('IRL code verification error:', err);
+    console.error('IRL code error:', err);
     return { ok: false, reason: 'Verification system error' };
   }
 }
 
-function queueForReview(userAddress, questNumericId, questStringId, proof) {
+// Save pending submission to Redis (persistent across deploys)
+async function queueForReview(userAddress, questNumericId, quest, proof) {
   if (!proof || proof.length < 3) {
     return { ok: false, reason: 'Proof URL/handle required' };
   }
-  pendingSubmissions.push({
-    id: `${userAddress}-${questNumericId}-${Date.now()}`,
-    userAddress,
-    questNumericId,
-    questStringId,
-    proof,
-    submittedAt: new Date().toISOString(),
-    status: 'pending'
-  });
-  return {
-    ok: true,
-    pending: true,
-    message: 'Submission received! An admin will review and approve within 24 hours.'
-  };
+  try {
+    const redis = await getRedis();
+    const submissionId = `sub_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const submission = {
+      id: submissionId,
+      userAddress: userAddress.toLowerCase(),
+      questNumericId,
+      questStringId: quest.id,
+      questTitle: quest.title,
+      questXP: quest.xp,
+      proof,
+      submittedAt: new Date().toISOString(),
+      status: 'pending'
+    };
+
+    // Save submission
+    await redis.set(`submission:${submissionId}`, JSON.stringify(submission));
+    // Add to pending queue (sorted set ordered by timestamp)
+    await redis.zAdd('pending-submissions', { score: Date.now(), value: submissionId });
+
+    return {
+      ok: true,
+      pending: true,
+      message: 'Submission received! An admin will review and approve within 24 hours.'
+    };
+  } catch (err) {
+    console.error('Queue error:', err);
+    return { ok: false, reason: 'Could not save submission: ' + err.message };
+  }
 }
 
 async function mintQuestCompletion(playerAddress, questStringId) {
@@ -163,7 +172,7 @@ module.exports = async (req, res) => {
         verification = await verifyIRLCode(proof, userAddress);
         break;
       case 'manual':
-        verification = queueForReview(userAddress, numId, quest.id, proof);
+        verification = await queueForReview(userAddress, numId, quest, proof);
         break;
       case 'onchain-self':
         return res.status(200).json({
@@ -211,5 +220,4 @@ module.exports = async (req, res) => {
   }
 };
 
-module.exports.pendingSubmissions = pendingSubmissions;
 module.exports.QUEST_MAP = QUEST_MAP;

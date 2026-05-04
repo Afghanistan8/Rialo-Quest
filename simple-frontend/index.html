@@ -27,13 +27,15 @@
     .layout { position: relative; z-index: 2; }
     .topbar { border-bottom: 1px solid var(--line); background: rgba(10,10,10,0.85); backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 100; }
     .topbar-inner { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 32px; padding: 16px 32px; max-width: 1440px; margin: 0 auto; }
-    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
     .brand-mark { width: 32px; height: 32px; border: 1.5px solid var(--ink); position: relative; transform: rotate(45deg); }
     .brand-mark::before { content: ''; position: absolute; inset: 5px; background: var(--accent); }
-    .brand-text { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+    .brand-text { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); }
     .brand-text span { color: var(--ink-3); font-weight: 400; margin-left: 6px; }
     .nav-meta { display: flex; align-items: center; gap: 24px; justify-content: center; font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
     .nav-meta-item { display: flex; align-items: center; gap: 8px; }
+    .nav-meta a { color: var(--ink-3); text-decoration: none; transition: color 0.15s; }
+    .nav-meta a:hover { color: var(--accent); }
     .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2s ease-in-out infinite; }
     @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } }
     .topbar-actions { display: flex; align-items: center; gap: 12px; }
@@ -171,14 +173,14 @@
   <div class="layout">
     <header class="topbar">
       <div class="topbar-inner">
-        <div class="brand">
+        <a href="/" class="brand">
           <div class="brand-mark"></div>
           <div class="brand-text">RIALO <span>// QUEST</span></div>
-        </div>
+        </a>
         <div class="nav-meta">
           <div class="nav-meta-item"><span class="pulse-dot"></span>BASE SEPOLIA</div>
+          <div class="nav-meta-item"><a href="/host.html">⊕ HOST EVENT</a></div>
           <div class="nav-meta-item">v0.1.0</div>
-          <div class="nav-meta-item">EST. 2026</div>
         </div>
         <div class="topbar-actions" id="wallet-section">
           <button class="btn btn-primary btn-arrow" id="connect-btn">Connect Wallet</button>
@@ -198,7 +200,7 @@
           <p class="hero-sub">Rialo Quest turns real-world actions into verifiable onchain achievements. Mint your character, complete quests, earn XP — all secured on Base.</p>
           <div class="hero-cta">
             <button class="btn btn-primary btn-arrow" onclick="document.getElementById('quests').scrollIntoView({behavior:'smooth'})">Browse Quests</button>
-            <a href="https://github.com/Afghanistan8/Rialo-Quest" target="_blank" class="btn btn-ghost btn-arrow">View Source</a>
+            <a href="/host.html" class="btn btn-ghost btn-arrow">Host an Event</a>
           </div>
         </div>
         <aside class="hero-aside">
@@ -238,6 +240,7 @@
         <div style="color:var(--ink-2)">IRL Quest Engine v0.1.0</div>
       </div>
       <div class="footer-col" style="text-align:center">
+        <div><a href="/host.html">Host Dashboard ↗</a></div>
         <div><a href="https://github.com/Afghanistan8/Rialo-Quest" target="_blank">GitHub ↗</a></div>
         <div><a href="https://sepolia.basescan.org/address/0xC8E3c576c6aBC7536f7B158220e146aEE44C0725" target="_blank">Contract ↗</a></div>
       </div>
@@ -279,8 +282,8 @@
     const QUESTS = [
       { id: 1, title: 'Deploy on Base', desc: 'Complete an onchain transaction to claim this badge — proves you can interact with Base Sepolia.', xp: 150, tags: ['ONCHAIN', 'BUILDER'], type: 'self-sign', questStringId: 'first-deploy', instructions: `This quest is verified <strong>directly onchain</strong>. Click submit and approve the transaction in your wallet. The act of signing this tx is your proof of being onchain.`, helpText: `Need testnet ETH? Get it from <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank">Alchemy Faucet</a>.` },
       { id: 2, title: 'Discord OG', desc: 'Active member of the Rialo Discord community. Submission goes to manual review.', xp: 100, tags: ['SOCIAL', 'COMMUNITY'], type: 'manual', proofLabel: 'Discord Username', proofPlaceholder: 'yourname#1234 or @yourname', instructions: `Submit your Discord username. Submissions are <strong>manually reviewed</strong> within 24 hours. Make sure you've been active in the Rialo Discord before submitting.`, helpText: `Active means meaningful contributions, not just joining.` },
-      { id: 3, title: 'First GitHub PR', desc: 'Sign in with GitHub to verify your account. We check for at least one merged pull request.', xp: 200, tags: ['BUILDER', 'OPENSOURCE'], type: 'github-oauth', instructions: `Sign in with GitHub to <strong>verify you own the account</strong>. We'll check that you have at least one merged pull request on a public repo.`, helpText: `We use the official GitHub OAuth flow — your credentials are never seen by us.` },
-      { id: 4, title: 'Show Up IRL', desc: 'Attend a Rialo community meetup in person and verify with a check-in code.', xp: 350, tags: ['IRL', 'COMMUNITY'], type: 'auto', proofLabel: 'Event Code', proofPlaceholder: 'RIALO-MEET-XXX', instructions: `Enter the <strong>event code</strong> you received at the Rialo meetup. Each code can only be used once. Codes look like <code>RIALO-MEET-001</code>.`, helpText: `Codes are distributed only at official Rialo events.` },
+      { id: 3, title: 'GitHub Builder', desc: 'Sign in with GitHub to verify you build in public. Multiple ways to qualify.', xp: 200, tags: ['BUILDER', 'OPENSOURCE'], type: 'github-oauth', instructions: `Sign in with GitHub to <strong>verify you own the account</strong>. You'll qualify if you have <strong>any of these</strong>: a merged PR · a public repo about Rialo · a public repo with 5+ commits.`, helpText: `We use the official GitHub OAuth flow — your credentials are never seen by us.` },
+      { id: 4, title: 'Show Up IRL', desc: 'Attend a Rialo community meetup in person and verify with the host\'s event code.', xp: 350, tags: ['IRL', 'COMMUNITY'], type: 'auto', proofLabel: 'Event Code', proofPlaceholder: 'RIALO-XXXX-XXXX', instructions: `Enter the <strong>event code</strong> the host gave you. Each code can only be used once. Codes look like <code>RIALO-1234-AB12</code>.`, helpText: `Hosting an event? <a href="/host.html">Create your own codes ↗</a>` },
       { id: 5, title: 'Thread Writer', desc: 'Write quality content about Rialo on X or other platforms. Submission goes to manual review.', xp: 175, tags: ['SOCIAL', 'CONTENT'], type: 'manual', proofLabel: 'Content URL', proofPlaceholder: 'https://x.com/username/status/...', instructions: `Post a thread about Rialo on X (or any platform) and paste the URL. Submissions are <strong>manually reviewed</strong> within 24 hours. Quality and originality matter.`, helpText: `Tag <strong>@RialoHQ</strong> for faster review.` }
     ];
 
@@ -329,7 +332,6 @@
         provider.on?.('accountsChanged', (accs) => { if (accs.length === 0) location.reload(); else { userAddress = accs[0]; renderWallet(); } });
         provider.on?.('chainChanged', () => location.reload());
       } catch (err) {
-        console.error(err);
         if (err.code === 4001) showToast('Connection rejected', 'error');
         else showToast(`Failed: ${err.message || 'Unknown error'}`, 'error');
       }
@@ -355,7 +357,6 @@
       const footer = document.getElementById('modal-footer');
 
       if (quest.type === 'github-oauth') {
-        // Special UI for GitHub OAuth
         body.innerHTML = `
           <div class="verified-badge"><span class="check">✓</span>Verified via GitHub OAuth</div>
           <div class="modal-instructions">${quest.instructions}</div>
@@ -410,7 +411,6 @@
     document.getElementById('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
-    // GitHub OAuth flow — redirect to relay's /api/github-auth with wallet
     function connectGitHub() {
       if (!userAddress) { showToast('Connect your wallet first', 'error'); return; }
       window.location.href = `${RELAY_URL}/api/github-auth?wallet=${userAddress}`;
@@ -449,7 +449,6 @@
           if (questBtn) { questBtn.textContent = '✓ Completed'; questBtn.classList.add('completed'); questBtn.disabled = true; }
           closeModal();
         } catch (err) {
-          console.error(err);
           if (err.code === 4001 || err.code === 'ACTION_REJECTED') showToast('Transaction rejected', 'error');
           else showToast(`<strong>Failed</strong><br/>${err.shortMessage || err.message}`, 'error', 5000);
           submitBtn.disabled = false;
@@ -478,7 +477,8 @@
             if (questBtn) { questBtn.textContent = '⏳ Pending'; questBtn.classList.add('pending'); questBtn.disabled = true; }
           } else {
             const txLink = data.explorerUrl ? `<br/><a href="${data.explorerUrl}" target="_blank">View transaction ↗</a>` : '';
-            showToast(`<strong>Quest #${activeQuestId} complete · +${quest.xp} XP</strong>${txLink}`, 'success', 6000);
+            const eventLine = data.eventName ? `<br/><span style="opacity:0.7">${data.eventName}</span>` : '';
+            showToast(`<strong>Quest #${activeQuestId} complete · +${quest.xp} XP</strong>${eventLine}${txLink}`, 'success', 6000);
             if (questBtn) { questBtn.textContent = '✓ Completed'; questBtn.classList.add('completed'); questBtn.disabled = true; }
           }
           closeModal();
@@ -486,7 +486,6 @@
           throw new Error(data.error || 'Verification failed');
         }
       } catch (err) {
-        console.error(err);
         showToast(`<strong>Failed</strong><br/>${err.message}`, 'error', 5000);
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
@@ -512,7 +511,6 @@
     document.getElementById('connect-btn').addEventListener('click', connectWallet);
     renderQuests();
 
-    // Auto-detect existing wallet connection
     window.addEventListener('load', async () => {
       const provider = getProvider();
       if (provider) {
@@ -522,7 +520,6 @@
         } catch (e) {}
       }
 
-      // Handle GitHub OAuth callback messages
       const params = new URLSearchParams(window.location.search);
       const ghStatus = params.get('github_status');
       const ghMsg = params.get('github_msg');
@@ -533,7 +530,6 @@
         if (ghStatus === 'success') {
           const txLink = tx ? `<br/><a href="https://sepolia.basescan.org/tx/${tx}" target="_blank">View transaction ↗</a>` : '';
           showToast(`<strong>GitHub verified · @${githubUser || 'user'}</strong><br/>${ghMsg}${txLink}`, 'success', 8000);
-          // Mark Quest 3 as complete in UI
           setTimeout(() => {
             const btn = document.querySelector('[data-quest-id="3"]');
             if (btn) { btn.textContent = '✓ Completed'; btn.classList.add('completed'); btn.disabled = true; }
@@ -543,7 +539,6 @@
         } else {
           showToast(`<strong>GitHub verification failed</strong><br/>${ghMsg}`, 'error', 6000);
         }
-        // Clean URL
         window.history.replaceState({}, '', window.location.pathname);
       }
     });

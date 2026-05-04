@@ -4,8 +4,8 @@
 const { createWalletClient, createPublicClient, http, parseAbi, isAddress } = require('viem');
 const { privateKeyToAccount } = require('viem/accounts');
 const { baseSepolia } = require('viem/chains');
+const { createClient } = require('redis');
 
-// ─── CONFIG ─────────────────────────────────────────────
 const QUEST_MANAGER_ADDRESS = process.env.NEXT_PUBLIC_QUEST_MANAGER_CONTRACT;
 const ALCHEMY_URL = process.env.NEXT_PUBLIC_ALCHEMY_URL || 'https://sepolia.base.org';
 
@@ -14,72 +14,68 @@ const QUEST_MANAGER_ABI = parseAbi([
   'function hasCompleted(string calldata questId, address player) external view returns (bool)'
 ]);
 
-// ─── QUEST MAP ──────────────────────────────────────────
-// Maps frontend numeric IDs to actual onchain string IDs
 const QUEST_MAP = {
-  1: { id: 'first-deploy',     trigger: 'onchain-self',  xp: 150 },  // Player must call directly
-  2: { id: 'discord-og',       trigger: 'manual',        xp: 100 },  // Manual review
-  3: { id: 'github-first-pr',  trigger: 'github',        xp: 200 },  // Auto verify
-  4: { id: 'first-irl-event',  trigger: 'irl-code',      xp: 350 },  // Code system
-  5: { id: 'thread-writer',    trigger: 'manual',        xp: 175 }   // Manual review
+  1: { id: 'first-deploy',     trigger: 'onchain-self', xp: 150 },
+  2: { id: 'discord-og',       trigger: 'manual',       xp: 100 },
+  3: { id: 'github-first-pr',  trigger: 'github-oauth', xp: 200 }, // Use OAuth route instead
+  4: { id: 'first-irl-event',  trigger: 'irl-code',     xp: 350 },
+  5: { id: 'thread-writer',    trigger: 'manual',       xp: 175 }
 };
 
-// ─── IRL EVENT CODES ────────────────────────────────────
-const VALID_IRL_CODES = new Set([
-  'RIALO-MEET-001', 'RIALO-MEET-002', 'RIALO-MEET-003',
-  'RIALO-MEET-004', 'RIALO-MEET-005', 'RIALO-MEET-006',
-  'RIALO-MEET-007', 'RIALO-MEET-008', 'RIALO-MEET-009',
-  'RIALO-MEET-010', 'RIALO-LAGOS-001', 'RIALO-LAGOS-002',
-  'RIALO-LAGOS-003', 'RIALO-LAGOS-004', 'RIALO-LAGOS-005'
-]);
+let redisClient = null;
+async function getRedis() {
+  if (redisClient && redisClient.isReady) return redisClient;
+  redisClient = createClient({ url: process.env.REDIS_URL });
+  redisClient.on('error', (err) => console.error('Redis error:', err));
+  await redisClient.connect();
+  return redisClient;
+}
 
-const usedCodes = new Set();
 const pendingSubmissions = [];
 
-// ─── VERIFIERS ──────────────────────────────────────────
-
-// GitHub: Check user has at least 1 merged PR (matches your original logic)
-async function verifyGitHub(githubUsername) {
-  if (!githubUsername || !/^[a-zA-Z0-9-]{1,39}$/.test(githubUsername)) {
-    return { ok: false, reason: 'Invalid GitHub username format' };
-  }
-  try {
-    const headers = { Accept: 'application/vnd.github.v3+json' };
-    if (process.env.GITHUB_TOKEN) {
-      headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
-    }
-    const res = await fetch(
-      `https://api.github.com/search/issues?q=author:${githubUsername}+type:pr+is:merged`,
-      { headers }
-    );
-    if (!res.ok) {
-      return { ok: false, reason: `GitHub API error: ${res.status}` };
-    }
-    const data = await res.json();
-    if ((data.total_count || 0) === 0) {
-      return { ok: false, reason: 'No merged pull requests found for this GitHub user' };
-    }
-    return { ok: true, message: `Verified ${data.total_count} merged PR(s)` };
-  } catch (err) {
-    return { ok: false, reason: `GitHub check failed: ${err.message}` };
-  }
-}
-
-// IRL Event Code
-function verifyIRLCode(code) {
+// IRL code verification — now uses Redis instead of hardcoded list
+async function verifyIRLCode(code, userAddress) {
   if (!code) return { ok: false, reason: 'Code required' };
   const normalized = code.trim().toUpperCase();
-  if (!VALID_IRL_CODES.has(normalized)) {
-    return { ok: false, reason: 'Invalid event code' };
+
+  try {
+    const redis = await getRedis();
+    const codeJson = await redis.get(`event-code:${normalized}`);
+    if (!codeJson) {
+      return { ok: false, reason: 'Invalid event code' };
+    }
+    const codeData = JSON.parse(codeJson);
+    if (codeData.used) {
+      return { ok: false, reason: 'This code has already been used' };
+    }
+
+    // Get event details for context
+    const eventJson = await redis.get(`event:${codeData.eventId}`);
+    const event = eventJson ? JSON.parse(eventJson) : null;
+
+    // Mark code as used
+    codeData.used = true;
+    codeData.usedBy = userAddress.toLowerCase();
+    codeData.usedAt = new Date().toISOString();
+    await redis.set(`event-code:${normalized}`, JSON.stringify(codeData));
+
+    // Increment claim count on event
+    if (event) {
+      event.claimsCount = (event.claimsCount || 0) + 1;
+      await redis.set(`event:${codeData.eventId}`, JSON.stringify(event));
+    }
+
+    return {
+      ok: true,
+      message: event ? `Verified attendance at "${event.name}"` : `Code accepted`,
+      eventName: event?.name
+    };
+  } catch (err) {
+    console.error('IRL code verification error:', err);
+    return { ok: false, reason: 'Verification system error' };
   }
-  if (usedCodes.has(normalized)) {
-    return { ok: false, reason: 'This code has already been used' };
-  }
-  usedCodes.add(normalized);
-  return { ok: true, message: `Code ${normalized} accepted` };
 }
 
-// Manual review queue (Discord + Thread Writer)
 function queueForReview(userAddress, questNumericId, questStringId, proof) {
   if (!proof || proof.length < 3) {
     return { ok: false, reason: 'Proof URL/handle required' };
@@ -100,7 +96,6 @@ function queueForReview(userAddress, questNumericId, questStringId, proof) {
   };
 }
 
-// ─── ONCHAIN MINT ───────────────────────────────────────
 async function mintQuestCompletion(playerAddress, questStringId) {
   if (!process.env.RELAYER_PRIVATE_KEY) {
     throw new Error('Relayer not configured (missing RELAYER_PRIVATE_KEY)');
@@ -109,12 +104,7 @@ async function mintQuestCompletion(playerAddress, questStringId) {
     throw new Error('Missing NEXT_PUBLIC_QUEST_MANAGER_CONTRACT env var');
   }
 
-  // Check if already completed
-  const publicClient = createPublicClient({
-    chain: baseSepolia,
-    transport: http(ALCHEMY_URL)
-  });
-
+  const publicClient = createPublicClient({ chain: baseSepolia, transport: http(ALCHEMY_URL) });
   const alreadyDone = await publicClient.readContract({
     address: QUEST_MANAGER_ADDRESS,
     abi: QUEST_MANAGER_ABI,
@@ -129,11 +119,7 @@ async function mintQuestCompletion(playerAddress, questStringId) {
     : `0x${process.env.RELAYER_PRIVATE_KEY}`;
 
   const account = privateKeyToAccount(pk);
-  const walletClient = createWalletClient({
-    account,
-    chain: baseSepolia,
-    transport: http(ALCHEMY_URL)
-  });
+  const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http(ALCHEMY_URL) });
 
   const txHash = await walletClient.writeContract({
     address: QUEST_MANAGER_ADDRESS,
@@ -145,7 +131,6 @@ async function mintQuestCompletion(playerAddress, questStringId) {
   return { txHash, alreadyCompleted: false };
 }
 
-// ─── MAIN HANDLER ───────────────────────────────────────
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -169,21 +154,22 @@ module.exports = async (req, res) => {
     let verification;
 
     switch (quest.trigger) {
-      case 'github':
-        verification = await verifyGitHub(proof);
-        break;
+      case 'github-oauth':
+        return res.status(400).json({
+          success: false,
+          error: 'This quest requires GitHub OAuth. Please use the "Sign in with GitHub" button.'
+        });
       case 'irl-code':
-        verification = verifyIRLCode(proof);
+        verification = await verifyIRLCode(proof, userAddress);
         break;
       case 'manual':
         verification = queueForReview(userAddress, numId, quest.id, proof);
         break;
       case 'onchain-self':
-        // Player must call completeOnchainQuest directly from their wallet
         return res.status(200).json({
           success: false,
           requiresPlayerAction: true,
-          message: 'This quest requires you to sign the transaction yourself. The frontend will guide you.',
+          message: 'This quest requires you to sign the transaction yourself.',
           contractAddress: QUEST_MANAGER_ADDRESS,
           questStringId: quest.id
         });
@@ -203,7 +189,6 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Verified — mint onchain
     const mint = await mintQuestCompletion(userAddress, quest.id);
     if (mint.alreadyCompleted) {
       return res.status(200).json({
@@ -215,6 +200,7 @@ module.exports = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: verification.message,
+      eventName: verification.eventName,
       txHash: mint.txHash,
       explorerUrl: `https://sepolia.basescan.org/tx/${mint.txHash}`
     });

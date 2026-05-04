@@ -1,9 +1,7 @@
 // /api/github-callback.js
-// GitHub redirects here after the user authorizes.
-// We exchange the code for an access token, fetch the user's profile,
-// verify they have merged PRs, and mint the quest onchain.
+// Handles GitHub OAuth callback, verifies user, mints quest onchain.
 
-const { kv } = require('@vercel/kv');
+const { createClient } = require('redis');
 const { createWalletClient, createPublicClient, http, parseAbi } = require('viem');
 const { privateKeyToAccount } = require('viem/accounts');
 const { baseSepolia } = require('viem/chains');
@@ -11,15 +9,22 @@ const { baseSepolia } = require('viem/chains');
 const QUEST_MANAGER_ADDRESS = process.env.NEXT_PUBLIC_QUEST_MANAGER_CONTRACT;
 const ALCHEMY_URL = process.env.NEXT_PUBLIC_ALCHEMY_URL || 'https://sepolia.base.org';
 const QUEST_STRING_ID = 'github-first-pr';
+const FRONTEND_URL = 'https://rialo-quest.vercel.app';
 
 const QUEST_MANAGER_ABI = parseAbi([
   'function completeQuestAsRelayer(address player, string calldata questId) external',
   'function hasCompleted(string calldata questId, address player) external view returns (bool)'
 ]);
 
-const FRONTEND_URL = 'https://rialo-quest.vercel.app';
+let redisClient = null;
+async function getRedis() {
+  if (redisClient && redisClient.isReady) return redisClient;
+  redisClient = createClient({ url: process.env.REDIS_URL });
+  redisClient.on('error', (err) => console.error('Redis error:', err));
+  await redisClient.connect();
+  return redisClient;
+}
 
-// Helper to redirect with a status message
 function redirectWithStatus(res, status, message, extra = {}) {
   const url = new URL(FRONTEND_URL);
   url.searchParams.set('github_status', status);
@@ -35,26 +40,20 @@ module.exports = async (req, res) => {
 
   const { code, state, error: ghError } = req.query;
 
-  // User denied access
-  if (ghError) {
-    return redirectWithStatus(res, 'error', 'GitHub access denied');
-  }
+  if (ghError) return redirectWithStatus(res, 'error', 'GitHub access denied');
+  if (!code || !state) return redirectWithStatus(res, 'error', 'Missing OAuth parameters');
 
-  if (!code || !state) {
-    return redirectWithStatus(res, 'error', 'Missing OAuth parameters');
-  }
-
-  // Retrieve wallet from state token
+  // Retrieve wallet from state
   let walletAddress;
   try {
-    walletAddress = await kv.get(`oauth-state:${state}`);
+    const redis = await getRedis();
+    walletAddress = await redis.get(`oauth-state:${state}`);
     if (!walletAddress) {
       return redirectWithStatus(res, 'error', 'OAuth session expired. Try again.');
     }
-    // Delete the state immediately so it can't be reused
-    await kv.del(`oauth-state:${state}`);
+    await redis.del(`oauth-state:${state}`);
   } catch (err) {
-    console.error('KV error:', err);
+    console.error('Redis error:', err);
     return redirectWithStatus(res, 'error', 'Session storage error');
   }
 
@@ -75,20 +74,18 @@ module.exports = async (req, res) => {
       return redirectWithStatus(res, 'error', 'Failed to authenticate with GitHub');
     }
 
-    // Step 2: Fetch the authenticated user's profile
+    // Step 2: Get user profile
     const userRes = await fetch('https://api.github.com/user', {
       headers: {
         'Authorization': `Bearer ${tokenData.access_token}`,
         'Accept': 'application/vnd.github.v3+json'
       }
     });
-    if (!userRes.ok) {
-      return redirectWithStatus(res, 'error', 'Failed to fetch GitHub profile');
-    }
+    if (!userRes.ok) return redirectWithStatus(res, 'error', 'Failed to fetch GitHub profile');
     const githubUser = await userRes.json();
     const username = githubUser.login;
 
-    // Step 3: Verify they have at least 1 merged PR
+    // Step 3: Verify merged PRs
     const searchRes = await fetch(
       `https://api.github.com/search/issues?q=author:${username}+type:pr+is:merged`,
       {
@@ -106,16 +103,17 @@ module.exports = async (req, res) => {
         `@${username} has no merged PRs yet. Contribute to any open-source repo and try again.`);
     }
 
-    // Step 4: Save the GitHub→wallet mapping (for future audit/reference)
+    // Step 4: Save mapping (audit trail)
     try {
-      await kv.set(`github-user:${username.toLowerCase()}`, {
+      const redis = await getRedis();
+      await redis.set(`github-user:${username.toLowerCase()}`, JSON.stringify({
         wallet: walletAddress,
         verifiedAt: new Date().toISOString(),
         prCount
-      });
+      }));
     } catch (e) { /* non-fatal */ }
 
-    // Step 5: Check if quest already completed onchain
+    // Step 5: Check if already completed
     const publicClient = createPublicClient({ chain: baseSepolia, transport: http(ALCHEMY_URL) });
     const alreadyDone = await publicClient.readContract({
       address: QUEST_MANAGER_ADDRESS,
@@ -129,7 +127,7 @@ module.exports = async (req, res) => {
         `Quest already completed for this wallet. Verified @${username} (${prCount} merged PRs).`);
     }
 
-    // Step 6: Mint quest onchain via relayer
+    // Step 6: Mint
     if (!process.env.RELAYER_PRIVATE_KEY) {
       return redirectWithStatus(res, 'error', 'Relayer not configured');
     }

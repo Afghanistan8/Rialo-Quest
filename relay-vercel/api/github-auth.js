@@ -1,10 +1,17 @@
 // /api/github-auth.js
 // Initiates GitHub OAuth flow.
-// Frontend redirects user here with their wallet address as ?wallet=0x...
-// We then redirect to GitHub's authorization page with that wallet stored in the state.
 
 const crypto = require('crypto');
-const { kv } = require('@vercel/kv');
+const { createClient } = require('redis');
+
+let redisClient = null;
+async function getRedis() {
+  if (redisClient && redisClient.isReady) return redisClient;
+  redisClient = createClient({ url: process.env.REDIS_URL });
+  redisClient.on('error', (err) => console.error('Redis error:', err));
+  await redisClient.connect();
+  return redisClient;
+}
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -21,15 +28,18 @@ module.exports = async (req, res) => {
   if (!process.env.GITHUB_CLIENT_ID) {
     return res.status(500).json({ error: 'GitHub OAuth not configured' });
   }
+  if (!process.env.REDIS_URL) {
+    return res.status(500).json({ error: 'Redis not configured (missing REDIS_URL)' });
+  }
 
-  // Generate a random state token to prevent CSRF — store wallet against it
   const state = crypto.randomBytes(16).toString('hex');
 
   try {
-    // Store the wallet address keyed by state, expires in 10 min
-    await kv.set(`oauth-state:${state}`, wallet.toLowerCase(), { ex: 600 });
+    const redis = await getRedis();
+    // Store wallet keyed by state token, expire in 10 min
+    await redis.set(`oauth-state:${state}`, wallet.toLowerCase(), { EX: 600 });
   } catch (err) {
-    console.error('KV error:', err);
+    console.error('Redis error:', err);
     return res.status(500).json({ error: 'Storage error: ' + err.message });
   }
 

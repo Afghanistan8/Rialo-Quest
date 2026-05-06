@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RIALO QUEST · Host Dashboard</title>
+  <title>RIALO QUEST Â· Host Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Inter+Tight:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -40,7 +40,7 @@
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
     .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line-bright); }
     .btn-ghost:hover { border-color: var(--ink); background: rgba(255,255,255,0.03); }
-    .btn-arrow::after { content: '→'; font-family: var(--mono); transition: transform 0.2s; }
+    .btn-arrow::after { content: 'â†’'; font-family: var(--mono); transition: transform 0.2s; }
     .btn-arrow:hover::after { transform: translateX(4px); }
     .wallet-pill { display: inline-flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--line-bright); background: var(--bg-card); font-family: var(--mono); font-size: 12px; color: var(--ink); }
     .wallet-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); }
@@ -136,7 +136,7 @@
           <div class="brand-text">RIALO <span>// QUEST</span></div>
         </a>
         <div class="nav-meta">
-          <div><a href="/" style="color:var(--ink-3);text-decoration:none;">← QUESTS</a></div>
+          <div><a href="/" style="color:var(--ink-3);text-decoration:none;">â† QUESTS</a></div>
           <div>HOST DASHBOARD</div>
         </div>
         <div class="topbar-actions" id="wallet-section">
@@ -184,7 +184,7 @@
                 <input type="text" class="input" id="evt-prefix" placeholder="RIALO" maxlength="12" />
               </div>
             </div>
-            <button class="btn btn-primary btn-arrow" id="create-btn" onclick="createEvent()">Generate Codes</button>
+            <button class="btn btn-primary btn-arrow" id="create-btn" onclick="generateEventCodes()">Generate Codes</button>
           </form>
         </div>
 
@@ -210,7 +210,7 @@
           <div class="modal-eyebrow" id="codes-modal-event">EVENT NAME</div>
           <div class="modal-title" id="codes-modal-title">Event <em>codes</em></div>
         </div>
-        <button class="modal-close-x" onclick="closeCodesModal()">×</button>
+        <button class="modal-close-x" onclick="closeCodesModal()">Ã—</button>
       </div>
       <div class="modal-body">
         <div class="codes-summary" id="codes-summary"></div>
@@ -286,7 +286,7 @@
       document.getElementById('wallet-section').innerHTML = `<div class="wallet-pill"><span class="dot"></span><span>${shortenAddress(userAddress)}</span></div>`;
     }
 
-    async function createEvent() {
+    async function generateEventCodes() {
       if (!userAddress) { showToast('Connect your wallet first', 'error'); return; }
 
       const name = document.getElementById('evt-name').value.trim();
@@ -314,7 +314,7 @@
         const data = await res.json();
         if (!res.ok || !data.success) throw new Error(data.error || 'Creation failed');
 
-        showToast(`<strong>Event created · ${data.codes.length} codes generated</strong>`, 'success', 5000);
+        showToast(`<strong>Event created Â· ${data.codes.length} codes generated</strong>`, 'success', 5000);
         document.getElementById('event-form').reset();
         document.getElementById('evt-count').value = '50';
 
@@ -343,7 +343,7 @@
         if (!res.ok) throw new Error(data.error || 'Load failed');
 
         if (!data.events || data.events.length === 0) {
-          list.innerHTML = '<div class="empty-state">No events yet · Create your first one</div>';
+          list.innerHTML = '<div class="empty-state">No events yet Â· Create your first one</div>';
           return;
         }
 
@@ -352,7 +352,7 @@
             <div class="event-card-head">
               <div>
                 <div class="event-name">${escapeHtml(evt.name)}</div>
-                <div class="event-loc">${escapeHtml(evt.location)} · ${formatDate(evt.eventDate)}</div>
+                <div class="event-loc">${escapeHtml(evt.location)} Â· ${formatDate(evt.eventDate)}</div>
               </div>
               <div class="event-actions">
                 <button class="event-btn" onclick="viewCodes('${evt.id}', '${escapeHtml(evt.name).replace(/'/g, "\\'")}')">View Codes</button>
@@ -384,7 +384,7 @@
     }
 
     function showCodesModal(eventName, location, codes) {
-      document.getElementById('codes-modal-event').textContent = `${eventName.toUpperCase()} · ${location.toUpperCase()}`;
+      document.getElementById('codes-modal-event').textContent = `${eventName.toUpperCase()} Â· ${location.toUpperCase()}`;
       document.getElementById('codes-modal-title').innerHTML = `Event <em>codes</em>`;
 
       const total = codes.length;
@@ -392,7 +392,7 @@
       const remaining = total - used;
 
       document.getElementById('codes-summary').innerHTML = `
-        <strong>${total}</strong> codes generated · <strong>${remaining}</strong> available · <strong>${used}</strong> claimed<br/>
+        <strong>${total}</strong> codes generated Â· <strong>${remaining}</strong> available Â· <strong>${used}</strong> claimed<br/>
         Click any code to copy. Distribute these codes only at the event.
       `;
 
@@ -460,3 +460,4 @@
   </script>
 </body>
 </html>
+

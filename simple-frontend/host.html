@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RIALO QUEST Â· Host Dashboard</title>
+  <title>RIALO QUEST · Host Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Inter+Tight:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -40,7 +40,7 @@
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
     .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line-bright); }
     .btn-ghost:hover { border-color: var(--ink); background: rgba(255,255,255,0.03); }
-    .btn-arrow::after { content: 'â†’'; font-family: var(--mono); transition: transform 0.2s; }
+    .btn-arrow::after { content: '\2192'; font-family: var(--mono); transition: transform 0.2s; }
     .btn-arrow:hover::after { transform: translateX(4px); }
     .wallet-pill { display: inline-flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--line-bright); background: var(--bg-card); font-family: var(--mono); font-size: 12px; color: var(--ink); }
     .wallet-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); }
@@ -136,7 +136,7 @@
           <div class="brand-text">RIALO <span>// QUEST</span></div>
         </a>
         <div class="nav-meta">
-          <div><a href="/" style="color:var(--ink-3);text-decoration:none;">â† QUESTS</a></div>
+          <div><a href="/" style="color:var(--ink-3);text-decoration:none;">&larr; QUESTS</a></div>
           <div>HOST DASHBOARD</div>
         </div>
         <div class="topbar-actions" id="wallet-section">
@@ -153,7 +153,6 @@
 
     <main class="container">
       <div class="grid-2">
-        <!-- Create event panel -->
         <div class="panel">
           <div class="panel-head">
             <div class="panel-num">01 / NEW EVENT</div>
@@ -188,7 +187,6 @@
           </form>
         </div>
 
-        <!-- Events list panel -->
         <div class="panel">
           <div class="panel-head">
             <div class="panel-num">02 / YOUR EVENTS</div>
@@ -202,7 +200,6 @@
     </main>
   </div>
 
-  <!-- Codes modal -->
   <div class="modal-overlay" id="codes-modal">
     <div class="modal">
       <div class="modal-header">
@@ -210,7 +207,7 @@
           <div class="modal-eyebrow" id="codes-modal-event">EVENT NAME</div>
           <div class="modal-title" id="codes-modal-title">Event <em>codes</em></div>
         </div>
-        <button class="modal-close-x" onclick="closeCodesModal()">Ã—</button>
+        <button class="modal-close-x" onclick="closeCodesModal()">&times;</button>
       </div>
       <div class="modal-body">
         <div class="codes-summary" id="codes-summary"></div>
@@ -235,18 +232,18 @@
     function showToast(message, type = 'info', duration = 4000) {
       const c = document.getElementById('toast-container');
       const t = document.createElement('div');
-      t.className = `toast ${type}`;
+      t.className = 'toast ' + type;
       t.innerHTML = message;
       c.appendChild(t);
-      setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, duration);
+      setTimeout(function() { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(function() { t.remove(); }, 300); }, duration);
     }
 
-    function shortenAddress(a) { return `${a.slice(0, 6)}...${a.slice(-4)}`; }
+    function shortenAddress(a) { return a.slice(0, 6) + '...' + a.slice(-4); }
 
     function getProvider() {
       if (window.okxwallet) return window.okxwallet;
-      if (window.ethereum?.providers) {
-        const okx = window.ethereum.providers.find(p => p.isOkxWallet);
+      if (window.ethereum && window.ethereum.providers) {
+        const okx = window.ethereum.providers.find(function(p) { return p.isOkxWallet; });
         if (okx) return okx;
       }
       return window.ethereum;
@@ -274,16 +271,18 @@
         renderWallet();
         loadEvents();
         showToast('Wallet connected', 'success');
-        provider.on?.('accountsChanged', () => location.reload());
-        provider.on?.('chainChanged', () => location.reload());
+        if (provider.on) {
+          provider.on('accountsChanged', function() { location.reload(); });
+          provider.on('chainChanged', function() { location.reload(); });
+        }
       } catch (err) {
         if (err.code === 4001) showToast('Connection rejected', 'error');
-        else showToast(`Failed: ${err.message}`, 'error');
+        else showToast('Failed: ' + err.message, 'error');
       }
     }
 
     function renderWallet() {
-      document.getElementById('wallet-section').innerHTML = `<div class="wallet-pill"><span class="dot"></span><span>${shortenAddress(userAddress)}</span></div>`;
+      document.getElementById('wallet-section').innerHTML = '<div class="wallet-pill"><span class="dot"></span><span>' + shortenAddress(userAddress) + '</span></div>';
     }
 
     async function generateEventCodes() {
@@ -306,26 +305,25 @@
       btn.textContent = 'Generating...';
 
       try {
-        const res = await fetch(`${RELAY_URL}/api/create-event`, {
+        const res = await fetch(RELAY_URL + '/api/create-event', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ hostAddress: userAddress, name, location, eventDate, codeCount, codePrefix })
+          body: JSON.stringify({ hostAddress: userAddress, name: name, location: location, eventDate: eventDate, codeCount: codeCount, codePrefix: codePrefix })
         });
         const data = await res.json();
         if (!res.ok || !data.success) throw new Error(data.error || 'Creation failed');
 
-        showToast(`<strong>Event created Â· ${data.codes.length} codes generated</strong>`, 'success', 5000);
+        showToast('<strong>Event created &middot; ' + data.codes.length + ' codes generated</strong>', 'success', 5000);
         document.getElementById('event-form').reset();
         document.getElementById('evt-count').value = '50';
 
-        // Show codes modal
-        currentCodes = data.codes.map(code => ({ code, used: false }));
+        currentCodes = data.codes.map(function(code) { return { code: code, used: false }; });
         currentEventName = data.event.name;
         showCodesModal(data.event.name, data.event.location, currentCodes);
 
         loadEvents();
       } catch (err) {
-        showToast(`Failed: ${err.message}`, 'error');
+        showToast('Failed: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
         btn.textContent = originalText;
@@ -338,67 +336,66 @@
       list.innerHTML = '<div class="empty-state">Loading...</div>';
 
       try {
-        const res = await fetch(`${RELAY_URL}/api/list-events?hostAddress=${userAddress}`);
+        const res = await fetch(RELAY_URL + '/api/list-events?hostAddress=' + userAddress);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Load failed');
 
         if (!data.events || data.events.length === 0) {
-          list.innerHTML = '<div class="empty-state">No events yet Â· Create your first one</div>';
+          list.innerHTML = '<div class="empty-state">No events yet &middot; Create your first one</div>';
           return;
         }
 
-        list.innerHTML = data.events.map(evt => `
-          <div class="event-card">
-            <div class="event-card-head">
-              <div>
-                <div class="event-name">${escapeHtml(evt.name)}</div>
-                <div class="event-loc">${escapeHtml(evt.location)} Â· ${formatDate(evt.eventDate)}</div>
-              </div>
-              <div class="event-actions">
-                <button class="event-btn" onclick="viewCodes('${evt.id}', '${escapeHtml(evt.name).replace(/'/g, "\\'")}')">View Codes</button>
-              </div>
-            </div>
-            <div class="event-stats">
-              <div><span class="event-stat-label">CODES:</span><span class="event-stat-value">${evt.codeCount}</span></div>
-              <div><span class="event-stat-label">CLAIMED:</span><span class="event-stat-value green">${evt.claimsCount || 0}</span></div>
-              <div><span class="event-stat-label">CREATED:</span><span class="event-stat-value">${formatDate(evt.createdAt)}</span></div>
-            </div>
-          </div>
-        `).join('');
+        list.innerHTML = data.events.map(function(evt) {
+          return '<div class="event-card">' +
+            '<div class="event-card-head">' +
+              '<div>' +
+                '<div class="event-name">' + escapeHtml(evt.name) + '</div>' +
+                '<div class="event-loc">' + escapeHtml(evt.location) + ' &middot; ' + formatDate(evt.eventDate) + '</div>' +
+              '</div>' +
+              '<div class="event-actions">' +
+                '<button class="event-btn" onclick="viewCodes(\'' + evt.id + '\', \'' + escapeHtml(evt.name).replace(/'/g, "\\'") + '\')">View Codes</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="event-stats">' +
+              '<div><span class="event-stat-label">CODES:</span><span class="event-stat-value">' + evt.codeCount + '</span></div>' +
+              '<div><span class="event-stat-label">CLAIMED:</span><span class="event-stat-value green">' + (evt.claimsCount || 0) + '</span></div>' +
+              '<div><span class="event-stat-label">CREATED:</span><span class="event-stat-value">' + formatDate(evt.createdAt) + '</span></div>' +
+            '</div>' +
+          '</div>';
+        }).join('');
       } catch (err) {
-        list.innerHTML = `<div class="empty-state">Error: ${err.message}</div>`;
+        list.innerHTML = '<div class="empty-state">Error: ' + err.message + '</div>';
       }
     }
 
     async function viewCodes(eventId, eventName) {
       try {
-        const res = await fetch(`${RELAY_URL}/api/list-events?eventId=${eventId}&hostAddress=${userAddress}`);
+        const res = await fetch(RELAY_URL + '/api/list-events?eventId=' + eventId + '&hostAddress=' + userAddress);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Load failed');
         currentCodes = data.codes || [];
         currentEventName = eventName;
         showCodesModal(eventName, data.event.location, currentCodes);
       } catch (err) {
-        showToast(`Failed: ${err.message}`, 'error');
+        showToast('Failed: ' + err.message, 'error');
       }
     }
 
     function showCodesModal(eventName, location, codes) {
-      document.getElementById('codes-modal-event').textContent = `${eventName.toUpperCase()} Â· ${location.toUpperCase()}`;
-      document.getElementById('codes-modal-title').innerHTML = `Event <em>codes</em>`;
+      document.getElementById('codes-modal-event').textContent = eventName.toUpperCase() + ' \u00B7 ' + location.toUpperCase();
+      document.getElementById('codes-modal-title').innerHTML = 'Event <em>codes</em>';
 
       const total = codes.length;
-      const used = codes.filter(c => c.used).length;
+      const used = codes.filter(function(c) { return c.used; }).length;
       const remaining = total - used;
 
-      document.getElementById('codes-summary').innerHTML = `
-        <strong>${total}</strong> codes generated Â· <strong>${remaining}</strong> available Â· <strong>${used}</strong> claimed<br/>
-        Click any code to copy. Distribute these codes only at the event.
-      `;
+      document.getElementById('codes-summary').innerHTML =
+        '<strong>' + total + '</strong> codes generated &middot; <strong>' + remaining + '</strong> available &middot; <strong>' + used + '</strong> claimed<br/>' +
+        'Click any code to copy. Distribute these codes only at the event.';
 
-      document.getElementById('codes-grid').innerHTML = codes.map(c => `
-        <div class="code-item ${c.used ? 'used' : ''}" onclick="copyCode('${c.code}')">${c.code}</div>
-      `).join('');
+      document.getElementById('codes-grid').innerHTML = codes.map(function(c) {
+        return '<div class="code-item ' + (c.used ? 'used' : '') + '" onclick="copyCode(\'' + c.code + '\')">' + c.code + '</div>';
+      }).join('');
 
       document.getElementById('codes-modal').classList.add('active');
     }
@@ -409,55 +406,57 @@
 
     function copyCode(code) {
       navigator.clipboard.writeText(code);
-      showToast(`<strong>Copied:</strong> ${code}`, 'success', 2000);
+      showToast('<strong>Copied:</strong> ' + code, 'success', 2000);
     }
 
     function copyAllCodes() {
-      const text = currentCodes.map(c => c.code).join('\n');
+      const text = currentCodes.map(function(c) { return c.code; }).join('\n');
       navigator.clipboard.writeText(text);
-      showToast(`<strong>Copied ${currentCodes.length} codes</strong> to clipboard`, 'success');
+      showToast('<strong>Copied ' + currentCodes.length + ' codes</strong> to clipboard', 'success');
     }
 
     function downloadCodes() {
       const safeName = currentEventName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-      const header = `# ${currentEventName}\n# Generated: ${new Date().toISOString()}\n# Total codes: ${currentCodes.length}\n\n`;
-      const text = header + currentCodes.map(c => c.code).join('\n');
+      const header = '# ' + currentEventName + '\n# Generated: ' + new Date().toISOString() + '\n# Total codes: ' + currentCodes.length + '\n\n';
+      const text = header + currentCodes.map(function(c) { return c.code; }).join('\n');
       const blob = new Blob([text], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `rialo-${safeName}-codes.txt`;
+      a.download = 'rialo-' + safeName + '-codes.txt';
       a.click();
       URL.revokeObjectURL(url);
-      showToast(`<strong>Downloaded</strong> rialo-${safeName}-codes.txt`, 'success');
+      showToast('<strong>Downloaded</strong> rialo-' + safeName + '-codes.txt', 'success');
     }
 
-    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, function(c) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+      });
+    }
 
     function formatDate(s) {
       try { return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
-      catch { return s; }
+      catch (e) { return s; }
     }
 
-    document.getElementById('codes-modal').addEventListener('click', (e) => {
+    document.getElementById('codes-modal').addEventListener('click', function(e) {
       if (e.target.id === 'codes-modal') closeCodesModal();
     });
 
     document.getElementById('connect-btn').addEventListener('click', connectWallet);
 
-    window.addEventListener('load', async () => {
+    window.addEventListener('load', async function() {
       const provider = getProvider();
       if (provider) {
         try {
           const accounts = await provider.request({ method: 'eth_accounts' });
-          if (accounts?.length > 0) { userAddress = accounts[0]; renderWallet(); loadEvents(); }
+          if (accounts && accounts.length > 0) { userAddress = accounts[0]; renderWallet(); loadEvents(); }
         } catch (e) {}
       }
-      // Set today's date as default
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('evt-date').value = today;
     });
   </script>
 </body>
 </html>
-

@@ -1,5 +1,5 @@
 // /api/list-events.js
-// Returns all events owned by a host wallet.
+// Returns all events owned by a host wallet, or detail of a single event.
 
 const { createClient } = require('redis');
 
@@ -10,6 +10,24 @@ async function getRedis() {
   redisClient.on('error', (err) => console.error('Redis error:', err));
   await redisClient.connect();
   return redisClient;
+}
+
+// Scan all keys matching a pattern.
+// Handles both legacy (yields strings) and v4+ (yields { cursor, keys } objects)
+// shapes of scanIterator across redis client versions.
+async function scanAllKeys(redis, pattern) {
+  const keys = [];
+  for await (const item of redis.scanIterator({ MATCH: pattern, COUNT: 200 })) {
+    if (typeof item === 'string') {
+      keys.push(item);
+    } else if (item && Array.isArray(item.keys)) {
+      keys.push(...item.keys);
+    } else if (item && typeof item === 'object' && 'keys' in item) {
+      // defensive: in case keys is iterable but not array
+      for (const k of item.keys) keys.push(k);
+    }
+  }
+  return keys;
 }
 
 module.exports = async (req, res) => {
@@ -24,35 +42,48 @@ module.exports = async (req, res) => {
   try {
     const redis = await getRedis();
 
-    // Single event detail (with codes)
+    // ── Single event detail (with codes) ──
     if (eventId) {
       const eventJson = await redis.get(`event:${eventId}`);
       if (!eventJson) return res.status(404).json({ error: 'Event not found' });
       const event = JSON.parse(eventJson);
 
-      // Optionally include codes if requesting host owns event
       let codes = null;
+      // Only return code details if requesting host owns the event
       if (hostAddress && hostAddress.toLowerCase() === event.hostAddress) {
-        // Find all codes belonging to this event by scanning
-        const codeKeys = [];
-        for await (const key of redis.scanIterator({ MATCH: 'event-code:*', COUNT: 100 })) {
-          codeKeys.push(key);
-        }
-        const codeData = await Promise.all(
-          codeKeys.map(async (k) => {
-            const v = await redis.get(k);
-            return { code: k.replace('event-code:', ''), data: JSON.parse(v) };
+        const codeKeys = await scanAllKeys(redis, 'event-code:*');
+
+        // Fetch all code entries in parallel
+        const codePairs = await Promise.all(
+          codeKeys.map(async (key) => {
+            // Defensive: ensure key is actually a string
+            const keyStr = typeof key === 'string' ? key : String(key);
+            try {
+              const value = await redis.get(keyStr);
+              if (!value) return null;
+              const data = JSON.parse(value);
+              return { code: keyStr.replace('event-code:', ''), data };
+            } catch (e) {
+              return null;
+            }
           })
         );
-        codes = codeData
-          .filter(c => c.data.eventId === eventId)
-          .map(c => ({ code: c.code, used: c.data.used, usedBy: c.data.usedBy, usedAt: c.data.usedAt }));
+
+        codes = codePairs
+          .filter(c => c && c.data && c.data.eventId === eventId)
+          .map(c => ({
+            code: c.code,
+            used: c.data.used,
+            usedBy: c.data.usedBy,
+            usedAt: c.data.usedAt
+          }))
+          .sort((a, b) => a.code.localeCompare(b.code));
       }
 
       return res.status(200).json({ success: true, event, codes });
     }
 
-    // List of events for a host
+    // ── List events for a host ──
     if (!hostAddress || !/^0x[a-fA-F0-9]{40}$/.test(hostAddress)) {
       return res.status(400).json({ error: 'Valid hostAddress required' });
     }
@@ -65,7 +96,6 @@ module.exports = async (req, res) => {
       if (json) events.push(JSON.parse(json));
     }
 
-    // Sort by createdAt descending
     events.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     return res.status(200).json({ success: true, events });

@@ -12,24 +12,6 @@ async function getRedis() {
   return redisClient;
 }
 
-// Scan all keys matching a pattern.
-// Handles both legacy (yields strings) and v4+ (yields { cursor, keys } objects)
-// shapes of scanIterator across redis client versions.
-async function scanAllKeys(redis, pattern) {
-  const keys = [];
-  for await (const item of redis.scanIterator({ MATCH: pattern, COUNT: 200 })) {
-    if (typeof item === 'string') {
-      keys.push(item);
-    } else if (item && Array.isArray(item.keys)) {
-      keys.push(...item.keys);
-    } else if (item && typeof item === 'object' && 'keys' in item) {
-      // defensive: in case keys is iterable but not array
-      for (const k of item.keys) keys.push(k);
-    }
-  }
-  return keys;
-}
-
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -49,20 +31,32 @@ module.exports = async (req, res) => {
       const event = JSON.parse(eventJson);
 
       let codes = null;
+
       // Only return code details if requesting host owns the event
       if (hostAddress && hostAddress.toLowerCase() === event.hostAddress) {
-        const codeKeys = await scanAllKeys(redis, 'event-code:*');
+        // Use KEYS — simple, works across all redis client versions.
+        // Fine for our scale (≤500 codes per event).
+        let allCodeKeys = [];
+        try {
+          allCodeKeys = await redis.keys('event-code:*');
+        } catch (e) {
+          console.error('KEYS command failed:', e);
+          allCodeKeys = [];
+        }
 
-        // Fetch all code entries in parallel
+        // Ensure all keys are strings (defensive)
+        const keysAsStrings = allCodeKeys
+          .map(k => (typeof k === 'string' ? k : String(k)))
+          .filter(k => k && k.startsWith('event-code:'));
+
+        // Fetch all code values in parallel
         const codePairs = await Promise.all(
-          codeKeys.map(async (key) => {
-            // Defensive: ensure key is actually a string
-            const keyStr = typeof key === 'string' ? key : String(key);
+          keysAsStrings.map(async (key) => {
             try {
-              const value = await redis.get(keyStr);
+              const value = await redis.get(key);
               if (!value) return null;
               const data = JSON.parse(value);
-              return { code: keyStr.replace('event-code:', ''), data };
+              return { code: key.replace('event-code:', ''), data };
             } catch (e) {
               return null;
             }

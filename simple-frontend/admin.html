@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RIALO QUEST · Admin Console</title>
+  <title>RIALO QUEST &middot; Admin Console</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Inter+Tight:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -12,75 +12,59 @@
     :root {
       --bg: #0a0a0a; --bg-card: #111111; --line: #1f1f1f; --line-bright: #2a2a2a;
       --ink: #fafafa; --ink-2: #a3a3a3; --ink-3: #6b6b6b;
-      --accent: #d4ff3a; --accent-2: #ff5e3a; --accent-3: #00d9ff;
+      --accent: #d4ff3a; --accent-2: #ff5e3a;
       --success: #4ade80; --warning: #fbbf24;
-      --grid-color: rgba(255,255,255,0.025);
-      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --mono: 'JetBrains Mono', monospace;
       --serif: 'Instrument Serif', Georgia, serif;
       --sans: 'Inter Tight', sans-serif;
     }
-    html { scroll-behavior: smooth; }
-    body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-weight: 400; letter-spacing: -0.01em; min-height: 100vh; overflow-x: hidden; background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px); background-size: 64px 64px; }
-    body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255,94,58,0.06), transparent), radial-gradient(ellipse 60% 40% at 90% 100%, rgba(212,255,58,0.04), transparent); pointer-events: none; z-index: 0; }
-    .layout { position: relative; z-index: 2; }
-    .topbar { border-bottom: 1px solid var(--line); background: rgba(10,10,10,0.85); backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 100; }
-    .topbar-inner { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 32px; padding: 16px 32px; max-width: 1440px; margin: 0 auto; }
+    body { background: var(--bg); color: var(--ink); font-family: var(--sans); min-height: 100vh; }
+    .topbar { border-bottom: 1px solid var(--line); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
     .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
     .brand-mark { width: 32px; height: 32px; border: 1.5px solid var(--ink); position: relative; transform: rotate(45deg); }
     .brand-mark::before { content: ''; position: absolute; inset: 5px; background: var(--accent-2); }
     .brand-text { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); }
     .brand-text span { color: var(--ink-3); font-weight: 400; margin-left: 6px; }
-    .nav-meta { display: flex; align-items: center; gap: 24px; justify-content: center; font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
-    .nav-meta a { color: var(--ink-3); text-decoration: none; transition: color 0.15s; }
-    .nav-meta a:hover { color: var(--accent); }
-    .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 8px var(--accent-2); animation: pulse 2s ease-in-out infinite; }
-    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } }
-    .topbar-actions { font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
-    .btn { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 14px 22px; border: none; cursor: pointer; transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
-    .btn-primary { background: var(--accent); color: #0a0a0a; }
-    .btn-primary:hover { background: var(--ink); transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--accent); }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .topbar-status { font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
+    .topbar-status .green { color: var(--success); }
 
     .auth-screen { max-width: 460px; margin: 80px auto; padding: 40px; border: 1px solid var(--line); background: var(--bg-card); position: relative; }
     .auth-screen::before { content: ''; position: absolute; top: -1px; left: -1px; right: -1px; height: 2px; background: linear-gradient(90deg, var(--accent-2), var(--accent)); }
     .auth-eyebrow { font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 8px; }
-    .auth-title { font-family: var(--sans); font-weight: 400; font-size: 32px; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 12px; }
+    .auth-title { font-family: var(--sans); font-weight: 400; font-size: 32px; letter-spacing: -0.03em; margin-bottom: 12px; }
     .auth-title em { font-family: var(--serif); font-style: italic; color: var(--accent-2); }
     .auth-desc { font-size: 14px; color: var(--ink-2); line-height: 1.6; margin-bottom: 24px; }
     .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
     .input-label { font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
-    .input { background: var(--bg); border: 1px solid var(--line-bright); color: var(--ink); padding: 14px 16px; font-family: var(--mono); font-size: 13px; outline: none; transition: border-color 0.15s; width: 100%; }
+    .input { background: var(--bg); border: 1px solid var(--line-bright); color: var(--ink); padding: 14px 16px; font-family: var(--mono); font-size: 13px; outline: none; width: 100%; }
     .input:focus { border-color: var(--accent); }
-    .input::placeholder { color: var(--ink-3); }
+    .btn { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 14px 22px; border: none; cursor: pointer; transition: all 0.15s; }
+    .btn-primary { background: var(--accent); color: #0a0a0a; }
+    .btn-primary:hover { background: var(--ink); }
 
-    .container { max-width: 1440px; margin: 0 auto; padding: 60px 32px 100px; }
-
+    .container { max-width: 1280px; margin: 0 auto; padding: 60px 32px 100px; }
     .header-bar { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 32px; padding-bottom: 32px; margin-bottom: 32px; border-bottom: 1px solid var(--line); }
     .header-num { font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.15em; margin-bottom: 8px; }
-    .header-title { font-family: var(--sans); font-weight: 300; font-size: clamp(36px, 5vw, 56px); letter-spacing: -0.04em; line-height: 1; }
+    .header-title { font-family: var(--sans); font-weight: 300; font-size: 48px; letter-spacing: -0.04em; line-height: 1; }
     .header-title em { font-family: var(--serif); font-style: italic; color: var(--accent-2); }
 
-    .filter-tabs { display: flex; gap: 0; border: 1px solid var(--line-bright); }
-    .filter-tab { background: transparent; border: none; color: var(--ink-3); font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 12px 18px; cursor: pointer; transition: all 0.15s; border-right: 1px solid var(--line-bright); }
+    .filter-tabs { display: flex; border: 1px solid var(--line-bright); }
+    .filter-tab { background: transparent; border: none; color: var(--ink-3); font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 12px 18px; cursor: pointer; border-right: 1px solid var(--line-bright); }
     .filter-tab:last-child { border-right: none; }
-    .filter-tab:hover { color: var(--ink); }
     .filter-tab.active { background: var(--accent); color: var(--bg); }
     .filter-tab .count { background: rgba(0,0,0,0.15); padding: 2px 7px; margin-left: 6px; font-size: 10px; }
-    .filter-tab.active .count { background: rgba(0,0,0,0.2); }
     .filter-tab:not(.active) .count { background: var(--line); color: var(--ink-2); }
 
-    .submissions-list { display: flex; flex-direction: column; gap: 12px; }
-    .empty-state { text-align: center; padding: 80px 20px; color: var(--ink-3); font-family: var(--mono); font-size: 12px; letter-spacing: 0.05em; border: 1px dashed var(--line); }
+    .empty-state { text-align: center; padding: 80px 20px; color: var(--ink-3); font-family: var(--mono); font-size: 12px; border: 1px dashed var(--line); }
     .empty-state .big { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
 
-    .sub-card { border: 1px solid var(--line); background: var(--bg-card); padding: 24px; transition: all 0.15s; position: relative; }
-    .sub-card:hover { border-color: var(--line-bright); }
-    .sub-card.approved { border-left: 3px solid var(--success); }
-    .sub-card.rejected { border-left: 3px solid var(--accent-2); opacity: 0.65; }
+    .sub-card { border: 1px solid var(--line); background: var(--bg-card); padding: 24px; margin-bottom: 12px; }
     .sub-card.pending { border-left: 3px solid var(--warning); }
-    .sub-head { display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 24px; margin-bottom: 16px; }
+    .sub-card.approved { border-left: 3px solid var(--success); }
+    .sub-card.rejected { border-left: 3px solid var(--accent-2); opacity: 0.7; }
+    .sub-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; margin-bottom: 16px; }
     .sub-quest-tag { font-family: var(--mono); font-size: 10px; color: var(--ink-3); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 6px; }
-    .sub-quest-title { font-family: var(--sans); font-weight: 500; font-size: 18px; letter-spacing: -0.02em; margin-bottom: 4px; }
+    .sub-quest-title { font-family: var(--sans); font-weight: 500; font-size: 18px; margin-bottom: 4px; }
     .sub-xp { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 700; }
     .sub-status-pill { font-family: var(--mono); font-size: 10px; padding: 5px 10px; border-radius: 99px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
     .sub-status-pill.pending { background: rgba(251,191,36,0.1); color: var(--warning); border: 1px solid rgba(251,191,36,0.3); }
@@ -89,290 +73,225 @@
     .sub-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; padding: 16px 20px; background: var(--bg); border: 1px solid var(--line); margin-bottom: 16px; font-family: var(--mono); font-size: 11px; }
     .sub-meta-label { color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
     .sub-meta-value { color: var(--ink); word-break: break-all; }
-    .sub-meta-value.green { color: var(--success); }
-    .sub-meta-value a { color: var(--accent-3); text-decoration: none; }
+    .sub-meta-value a { color: var(--accent); text-decoration: none; }
     .sub-meta-value a:hover { text-decoration: underline; }
-
     .sub-actions { display: flex; gap: 12px; flex-wrap: wrap; }
-    .action-btn { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 11px 18px; cursor: pointer; transition: all 0.15s; border: 1px solid; }
+    .action-btn { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 11px 18px; cursor: pointer; border: 1px solid; background: transparent; }
     .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .action-btn.approve { background: rgba(74,222,128,0.08); color: var(--success); border-color: rgba(74,222,128,0.3); }
-    .action-btn.approve:hover:not(:disabled) { background: var(--success); color: var(--bg); border-color: var(--success); }
-    .action-btn.reject { background: rgba(255,94,58,0.08); color: var(--accent-2); border-color: rgba(255,94,58,0.3); }
-    .action-btn.reject:hover:not(:disabled) { background: var(--accent-2); color: var(--bg); border-color: var(--accent-2); }
-    .action-btn.view { background: transparent; color: var(--ink-2); border-color: var(--line-bright); }
-    .action-btn.view:hover { border-color: var(--ink); color: var(--ink); }
+    .action-btn.approve { color: var(--success); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+    .action-btn.approve:hover:not(:disabled) { background: var(--success); color: var(--bg); }
+    .action-btn.reject { color: var(--accent-2); border-color: rgba(255,94,58,0.3); background: rgba(255,94,58,0.08); }
+    .action-btn.reject:hover:not(:disabled) { background: var(--accent-2); color: var(--bg); }
 
     .toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
-    .toast { background: var(--bg-card); border: 1px solid var(--line-bright); border-left: 3px solid var(--accent); padding: 16px 22px; font-family: var(--mono); font-size: 12px; color: var(--ink); max-width: 380px; animation: slideIn 0.3s ease; line-height: 1.5; }
+    .toast { background: var(--bg-card); border: 1px solid var(--line-bright); border-left: 3px solid var(--accent); padding: 16px 22px; font-family: var(--mono); font-size: 12px; max-width: 380px; line-height: 1.5; }
     .toast.success { border-left-color: var(--success); }
     .toast.error { border-left-color: var(--accent-2); }
     .toast a { color: var(--accent); text-decoration: underline; }
-    @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
-    @media (max-width: 980px) {
-      .nav-meta { display: none; }
-      .header-bar { grid-template-columns: 1fr; }
-      .filter-tabs { width: 100%; overflow-x: auto; }
-      .sub-meta-grid { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 640px) {
-      .topbar-inner { padding: 14px 20px; gap: 16px; }
-      .container { padding: 32px 20px 80px; }
-      .auth-screen { padding: 28px 24px; margin: 40px 20px; }
-    }
   </style>
 </head>
 <body>
-  <div class="layout">
-    <header class="topbar">
-      <div class="topbar-inner">
-        <a href="/" class="brand">
-          <div class="brand-mark"></div>
-          <div class="brand-text">RIALO <span>// ADMIN</span></div>
-        </a>
-        <div class="nav-meta">
-          <div><a href="/">← QUESTS</a></div>
-          <div><span class="pulse-dot"></span>ADMIN CONSOLE</div>
-        </div>
-        <div class="topbar-actions" id="auth-status">— Locked</div>
-      </div>
-    </header>
+  <header class="topbar">
+    <a href="/" class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-text">RIALO <span>// ADMIN</span></div>
+    </a>
+    <div class="topbar-status" id="auth-status">&mdash; Locked</div>
+  </header>
 
-    <!-- Auth screen (shown until valid secret entered) -->
-    <div id="auth-screen-container">
-      <div class="auth-screen">
-        <div class="auth-eyebrow">// RESTRICTED ACCESS</div>
-        <h1 class="auth-title">Admin <em>console</em></h1>
-        <p class="auth-desc">Enter your admin secret to review pending Discord and Thread Writer submissions. Approving mints +XP onchain to the submitter's wallet.</p>
-        <div class="input-group">
-          <label class="input-label">Admin Secret</label>
-          <input type="password" class="input" id="admin-secret" placeholder="Enter your ADMIN_SECRET" autocomplete="off" />
-        </div>
-        <button class="btn btn-primary" onclick="login()">Unlock Console</button>
+  <!-- Login -->
+  <div id="login-view">
+    <div class="auth-screen">
+      <div class="auth-eyebrow">// RESTRICTED ACCESS</div>
+      <h1 class="auth-title">Admin <em>console</em></h1>
+      <p class="auth-desc">Enter your admin password to review pending Discord and Thread Writer submissions. Approving mints +XP onchain to the submitter's wallet.</p>
+      <div class="input-group">
+        <label class="input-label">Password</label>
+        <input type="password" class="input" id="pw-input" placeholder="Enter admin password" autocomplete="off" />
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()">Unlock Console</button>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <main class="container" id="dashboard-view" style="display:none">
+    <div class="header-bar">
+      <div>
+        <div class="header-num">01 / SUBMISSIONS</div>
+        <h1 class="header-title">Pending <em>review</em></h1>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="pending" onclick="setFilter('pending')">Pending<span class="count" id="count-pending">0</span></button>
+        <button class="filter-tab" data-filter="history" onclick="setFilter('history')">History<span class="count" id="count-history">0</span></button>
       </div>
     </div>
-
-    <!-- Main dashboard (shown after auth) -->
-    <main class="container" id="dashboard" style="display:none">
-      <div class="header-bar">
-        <div>
-          <div class="header-num">01 / SUBMISSIONS</div>
-          <h1 class="header-title">Pending <em>review</em></h1>
-        </div>
-        <div class="filter-tabs">
-          <button class="filter-tab active" data-filter="pending" onclick="setFilter('pending')">Pending<span class="count" id="count-pending">0</span></button>
-          <button class="filter-tab" data-filter="history" onclick="setFilter('history')">History<span class="count" id="count-history">0</span></button>
-        </div>
-      </div>
-
-      <div class="submissions-list" id="submissions-list">
-        <div class="empty-state">Loading...</div>
-      </div>
-    </main>
-  </div>
+    <div id="submissions-list">
+      <div class="empty-state">Loading...</div>
+    </div>
+  </main>
 
   <div class="toast-container" id="toast-container"></div>
 
   <script>
-    const RELAY_URL = 'https://rialo-quest-9ny7.vercel.app';
-    let adminSecret = null;
-    let activeFilter = 'pending';
-    let cachedData = { submissions: [], counts: { pending: 0, history: 0 } };
+    var pw = null;
+    var activeFilter = 'pending';
 
-    function showToast(message, type = 'info', duration = 4000) {
-      const c = document.getElementById('toast-container');
-      const t = document.createElement('div');
-      t.className = `toast ${type}`;
-      t.innerHTML = message;
+    function showToast(msg, type, dur) {
+      type = type || 'info'; dur = dur || 4000;
+      var c = document.getElementById('toast-container');
+      var t = document.createElement('div');
+      t.className = 'toast ' + type;
+      t.innerHTML = msg;
       c.appendChild(t);
-      setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, duration);
+      setTimeout(function() { t.remove(); }, dur);
     }
 
-    function shortenAddress(a) { return `${a.slice(0, 6)}...${a.slice(-4)}`; }
+    function shortAddr(a) { return a.slice(0, 6) + '...' + a.slice(-4); }
+    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function(c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+
     function formatDate(s) {
       try {
-        const d = new Date(s);
-        const now = new Date();
-        const diff = (now - d) / 1000; // seconds
+        var d = new Date(s);
+        var diff = (new Date() - d) / 1000;
         if (diff < 60) return 'just now';
-        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-        if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-        if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      } catch { return s; }
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        return Math.floor(diff / 86400) + 'd ago';
+      } catch (e) { return s; }
     }
 
-    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+    function doLogin() {
+      var input = document.getElementById('pw-input').value.trim();
+      if (!input) { showToast('Enter password', 'error'); return; }
 
-    async function login() {
-      const secret = document.getElementById('admin-secret').value.trim();
-      if (!secret) { showToast('Enter your admin secret', 'error'); return; }
-      // Test by listing pending
-      try {
-        const res = await fetch(`${RELAY_URL}/api/admin-approve?filter=pending`, {
-          headers: { 'X-Admin-Secret': secret }
+      fetch('/api/review?secret=' + encodeURIComponent(input) + '&filter=pending')
+        .then(function(r) {
+          if (r.status === 401) { showToast('Invalid password', 'error'); throw 'unauth'; }
+          if (!r.ok) throw new Error('Server error: ' + r.status);
+          return r.json();
+        })
+        .then(function(data) {
+          pw = input;
+          sessionStorage.setItem('rialo_admin_pw', pw);
+          document.getElementById('login-view').style.display = 'none';
+          document.getElementById('dashboard-view').style.display = 'block';
+          var statusEl = document.getElementById('auth-status');
+          statusEl.innerHTML = '<span class="green">&bull; Unlocked</span>';
+          render(data);
+          showToast('<strong>Console unlocked</strong>', 'success');
+          setInterval(loadSubmissions, 30000);
+        })
+        .catch(function(err) {
+          if (err !== 'unauth') showToast('Login failed: ' + (err.message || err), 'error');
         });
-        if (res.status === 401) {
-          showToast('Invalid admin secret', 'error');
-          return;
-        }
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        adminSecret = secret;
-        sessionStorage.setItem('rialo_admin_secret', secret);
-        document.getElementById('auth-screen-container').style.display = 'none';
-        document.getElementById('dashboard').style.display = 'block';
-        document.getElementById('auth-status').textContent = '● Unlocked';
-        document.getElementById('auth-status').style.color = 'var(--success)';
-        const data = await res.json();
-        cachedData = data;
-        render();
-        showToast('Console unlocked', 'success');
-        // Auto-refresh every 30s
-        setInterval(loadSubmissions, 30000);
-      } catch (err) {
-        showToast(`Login failed: ${err.message}`, 'error');
-      }
     }
 
-    async function loadSubmissions() {
-      if (!adminSecret) return;
-      try {
-        const res = await fetch(`${RELAY_URL}/api/admin-approve?filter=${activeFilter}`, {
-          headers: { 'X-Admin-Secret': adminSecret }
-        });
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        cachedData = await res.json();
-        render();
-      } catch (err) {
-        showToast(`Failed to load: ${err.message}`, 'error');
-      }
+    function loadSubmissions() {
+      if (!pw) return;
+      fetch('/api/review?secret=' + encodeURIComponent(pw) + '&filter=' + activeFilter)
+        .then(function(r) { return r.json(); })
+        .then(function(data) { render(data); })
+        .catch(function(err) { showToast('Reload failed', 'error'); });
     }
 
-    function setFilter(filter) {
-      activeFilter = filter;
-      document.querySelectorAll('.filter-tab').forEach(t => {
-        t.classList.toggle('active', t.dataset.filter === filter);
-      });
+    function setFilter(f) {
+      activeFilter = f;
+      var tabs = document.querySelectorAll('.filter-tab');
+      for (var i = 0; i < tabs.length; i++) {
+        tabs[i].classList.toggle('active', tabs[i].dataset.filter === f);
+      }
       loadSubmissions();
     }
 
-    function render() {
-      const counts = cachedData.counts || { pending: 0, history: 0 };
+    function render(data) {
+      var counts = data.counts || { pending: 0, history: 0 };
       document.getElementById('count-pending').textContent = counts.pending || 0;
       document.getElementById('count-history').textContent = counts.history || 0;
 
-      const list = document.getElementById('submissions-list');
-      const subs = cachedData.submissions || [];
+      var subs = data.submissions || [];
+      var list = document.getElementById('submissions-list');
 
       if (subs.length === 0) {
-        list.innerHTML = `
-          <div class="empty-state">
-            <div class="big">${activeFilter === 'pending' ? '◯' : '✦'}</div>
-            ${activeFilter === 'pending' ? 'No pending submissions · auto-refreshing every 30s' : 'No reviewed submissions yet'}
-          </div>
-        `;
+        list.innerHTML = '<div class="empty-state"><div class="big">' + (activeFilter === 'pending' ? '&#9711;' : '&#10022;') + '</div>' + (activeFilter === 'pending' ? 'No pending submissions &middot; auto-refreshing every 30s' : 'No reviewed submissions yet') + '</div>';
         return;
       }
 
-      list.innerHTML = subs.map(sub => {
-        const proofLink = (sub.proof || '').match(/^https?:\/\//)
-          ? `<a href="${escapeHtml(sub.proof)}" target="_blank">${escapeHtml(sub.proof)} ↗</a>`
+      var html = '';
+      for (var i = 0; i < subs.length; i++) {
+        var sub = subs[i];
+        var proofLink = (sub.proof || '').match(/^https?:\/\//)
+          ? '<a href="' + escapeHtml(sub.proof) + '" target="_blank">' + escapeHtml(sub.proof) + ' &#8599;</a>'
           : escapeHtml(sub.proof);
-        const txLink = sub.txHash
-          ? `<a href="https://sepolia.basescan.org/tx/${sub.txHash}" target="_blank">${sub.txHash.slice(0,10)}...${sub.txHash.slice(-8)} ↗</a>`
-          : '—';
-        const isPending = sub.status === 'pending';
-        return `
-          <div class="sub-card ${sub.status}">
-            <div class="sub-head">
-              <div>
-                <div class="sub-quest-tag">QUEST · ${escapeHtml(sub.questStringId)}</div>
-                <div class="sub-quest-title">${escapeHtml(sub.questTitle || sub.questStringId)}</div>
-                <div class="sub-xp">+${sub.questXP || '?'} XP reward</div>
-              </div>
-              <div class="sub-status-pill ${sub.status}">${escapeHtml(sub.status.replace('_', ' '))}</div>
-            </div>
-            <div class="sub-meta-grid">
-              <div>
-                <div class="sub-meta-label">Submitter Wallet</div>
-                <div class="sub-meta-value">${shortenAddress(sub.userAddress)}</div>
-              </div>
-              <div>
-                <div class="sub-meta-label">Submitted</div>
-                <div class="sub-meta-value">${formatDate(sub.submittedAt)}</div>
-              </div>
-              <div style="grid-column: 1 / -1">
-                <div class="sub-meta-label">Proof Submitted</div>
-                <div class="sub-meta-value">${proofLink}</div>
-              </div>
-              ${sub.txHash ? `
-                <div style="grid-column: 1 / -1">
-                  <div class="sub-meta-label">Mint Transaction</div>
-                  <div class="sub-meta-value green">${txLink}</div>
-                </div>
-              ` : ''}
-              ${sub.reviewedAt ? `
-                <div>
-                  <div class="sub-meta-label">Reviewed</div>
-                  <div class="sub-meta-value">${formatDate(sub.reviewedAt)}</div>
-                </div>
-              ` : ''}
-            </div>
-            <div class="sub-actions">
-              ${isPending ? `
-                <button class="action-btn approve" onclick="reviewSubmission('${sub.id}', 'approve')">✓ Approve · Mint</button>
-                <button class="action-btn reject" onclick="reviewSubmission('${sub.id}', 'reject')">✗ Reject</button>
-              ` : ''}
-              ${sub.proof?.startsWith('http') ? `<a class="action-btn view" href="${escapeHtml(sub.proof)}" target="_blank">View Proof ↗</a>` : ''}
-              <a class="action-btn view" href="https://sepolia.basescan.org/address/${sub.userAddress}" target="_blank">View Wallet ↗</a>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
+        var txLink = sub.txHash
+          ? '<a href="https://sepolia.basescan.org/tx/' + sub.txHash + '" target="_blank">' + sub.txHash.slice(0,10) + '...' + sub.txHash.slice(-8) + ' &#8599;</a>'
+          : '';
+        var isPending = sub.status === 'pending';
 
-    async function reviewSubmission(submissionId, action) {
-      const card = document.querySelector(`[onclick*="${submissionId}"]`)?.closest('.sub-card');
-      const buttons = card?.querySelectorAll('.action-btn');
-      buttons?.forEach(b => b.disabled = true);
-
-      try {
-        const res = await fetch(`${RELAY_URL}/api/admin-approve`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': adminSecret },
-          body: JSON.stringify({ submissionId, action })
-        });
-        const data = await res.json();
-        if (action === 'approve') {
-          if (data.success) {
-            const txLink = data.explorerUrl ? `<br/><a href="${data.explorerUrl}" target="_blank">View tx ↗</a>` : '';
-            showToast(`<strong>Approved · XP minted</strong>${txLink}`, 'success', 5000);
-          } else {
-            showToast(`<strong>Failed:</strong> ${data.error || 'Unknown'}`, 'error', 5000);
-          }
-        } else {
-          showToast('<strong>Submission rejected</strong>', 'success');
+        html += '<div class="sub-card ' + sub.status + '">';
+        html += '  <div class="sub-head">';
+        html += '    <div>';
+        html += '      <div class="sub-quest-tag">QUEST &middot; ' + escapeHtml(sub.questStringId) + '</div>';
+        html += '      <div class="sub-quest-title">' + escapeHtml(sub.questTitle || sub.questStringId) + '</div>';
+        html += '      <div class="sub-xp">+' + (sub.questXP || '?') + ' XP reward</div>';
+        html += '    </div>';
+        html += '    <div class="sub-status-pill ' + sub.status + '">' + escapeHtml(sub.status.replace('_', ' ')) + '</div>';
+        html += '  </div>';
+        html += '  <div class="sub-meta-grid">';
+        html += '    <div><div class="sub-meta-label">Submitter Wallet</div><div class="sub-meta-value">' + shortAddr(sub.userAddress) + '</div></div>';
+        html += '    <div><div class="sub-meta-label">Submitted</div><div class="sub-meta-value">' + formatDate(sub.submittedAt) + '</div></div>';
+        html += '    <div style="grid-column: 1 / -1"><div class="sub-meta-label">Proof</div><div class="sub-meta-value">' + proofLink + '</div></div>';
+        if (sub.txHash) {
+          html += '    <div style="grid-column: 1 / -1"><div class="sub-meta-label">Mint Transaction</div><div class="sub-meta-value">' + txLink + '</div></div>';
         }
-        await loadSubmissions();
-      } catch (err) {
-        showToast(`Failed: ${err.message}`, 'error');
-        buttons?.forEach(b => b.disabled = false);
+        html += '  </div>';
+        if (isPending) {
+          html += '  <div class="sub-actions">';
+          html += '    <button class="action-btn approve" onclick="review(\'' + sub.id + '\', \'approve\')">&#10003; Approve &middot; Mint</button>';
+          html += '    <button class="action-btn reject" onclick="review(\'' + sub.id + '\', \'reject\')">&#10007; Reject</button>';
+          html += '  </div>';
+        }
+        html += '</div>';
       }
+      list.innerHTML = html;
     }
 
-    // Resume session if secret was saved
-    window.addEventListener('load', () => {
-      const saved = sessionStorage.getItem('rialo_admin_secret');
-      if (saved) {
-        document.getElementById('admin-secret').value = saved;
-        login();
-      }
-    });
+    function review(id, action) {
+      var btns = document.querySelectorAll('.action-btn');
+      for (var i = 0; i < btns.length; i++) btns[i].disabled = true;
 
-    // Login on Enter key
-    document.getElementById('admin-secret').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') login();
+      fetch('/api/review?secret=' + encodeURIComponent(pw), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionId: id, action: action })
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (action === 'approve' && data.success) {
+            var link = data.explorerUrl ? '<br/><a href="' + data.explorerUrl + '" target="_blank">View tx &#8599;</a>' : '';
+            showToast('<strong>Approved &middot; XP minted</strong>' + link, 'success', 5000);
+          } else if (action === 'reject') {
+            showToast('<strong>Submission rejected</strong>', 'success');
+          } else {
+            showToast('<strong>Failed:</strong> ' + (data.error || 'Unknown'), 'error', 5000);
+          }
+          loadSubmissions();
+        })
+        .catch(function(err) {
+          showToast('Failed: ' + err.message, 'error');
+          for (var i = 0; i < btns.length; i++) btns[i].disabled = false;
+        });
+    }
+
+    // Auto-login if password is saved
+    window.addEventListener('load', function() {
+      var saved = sessionStorage.getItem('rialo_admin_pw');
+      if (saved) {
+        document.getElementById('pw-input').value = saved;
+        doLogin();
+      }
+      document.getElementById('pw-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') doLogin();
+      });
     });
   </script>
 </body>

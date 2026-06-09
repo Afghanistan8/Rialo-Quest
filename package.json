@@ -1,0 +1,9 @@
+{
+  "name": "rialo-quest-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "redis": "^4.6.0",
+    "viem": "^2.0.0"
+  }
+}

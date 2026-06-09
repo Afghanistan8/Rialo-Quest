@@ -41,13 +41,15 @@
     .btn { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 14px 22px; border: none; cursor: pointer; transition: all 0.15s; }
     .btn-primary { background: var(--accent); color: #0a0a0a; }
     .btn-primary:hover { background: var(--ink); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-banner { background: rgba(255,94,58,0.1); border: 1px solid rgba(255,94,58,0.4); color: var(--accent-2); padding: 12px 16px; margin-bottom: 16px; font-family: var(--mono); font-size: 12px; line-height: 1.5; word-break: break-word; }
 
     .container { max-width: 1280px; margin: 0 auto; padding: 60px 32px 100px; }
     .header-bar { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 32px; padding-bottom: 32px; margin-bottom: 32px; border-bottom: 1px solid var(--line); }
     .header-num { font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.15em; margin-bottom: 8px; }
     .header-title { font-family: var(--sans); font-weight: 300; font-size: 48px; letter-spacing: -0.04em; line-height: 1; }
     .header-title em { font-family: var(--serif); font-style: italic; color: var(--accent-2); }
-
     .filter-tabs { display: flex; border: 1px solid var(--line-bright); }
     .filter-tab { background: transparent; border: none; color: var(--ink-3); font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 12px 18px; cursor: pointer; border-right: 1px solid var(--line-bright); }
     .filter-tab:last-child { border-right: none; }
@@ -82,7 +84,6 @@
     .action-btn.approve:hover:not(:disabled) { background: var(--success); color: var(--bg); }
     .action-btn.reject { color: var(--accent-2); border-color: rgba(255,94,58,0.3); background: rgba(255,94,58,0.08); }
     .action-btn.reject:hover:not(:disabled) { background: var(--accent-2); color: var(--bg); }
-
     .toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
     .toast { background: var(--bg-card); border: 1px solid var(--line-bright); border-left: 3px solid var(--accent); padding: 16px 22px; font-family: var(--mono); font-size: 12px; max-width: 380px; line-height: 1.5; }
     .toast.success { border-left-color: var(--success); }
@@ -99,21 +100,22 @@
     <div class="topbar-status" id="auth-status">&mdash; Locked</div>
   </header>
 
-  <!-- Login -->
+  <!-- LOGIN VIEW -->
   <div id="login-view">
     <div class="auth-screen">
       <div class="auth-eyebrow">// RESTRICTED ACCESS</div>
       <h1 class="auth-title">Admin <em>console</em></h1>
-      <p class="auth-desc">Enter your admin password to review pending Discord and Thread Writer submissions. Approving mints +XP onchain to the submitter's wallet.</p>
+      <p class="auth-desc">Enter password to review pending submissions. Approving mints +XP onchain to the submitter's wallet.</p>
+      <div id="login-error" style="display:none"></div>
       <div class="input-group">
         <label class="input-label">Password</label>
-        <input type="password" class="input" id="pw-input" placeholder="Enter admin password" autocomplete="off" />
+        <input type="password" class="input" id="pw-input" placeholder="Password" autocomplete="off" />
       </div>
-      <button class="btn btn-primary" onclick="doLogin()">Unlock Console</button>
+      <button class="btn btn-primary" id="login-btn">Unlock Console</button>
     </div>
   </div>
 
-  <!-- Dashboard -->
+  <!-- DASHBOARD VIEW -->
   <main class="container" id="dashboard-view" style="display:none">
     <div class="header-bar">
       <div>
@@ -121,8 +123,8 @@
         <h1 class="header-title">Pending <em>review</em></h1>
       </div>
       <div class="filter-tabs">
-        <button class="filter-tab active" data-filter="pending" onclick="setFilter('pending')">Pending<span class="count" id="count-pending">0</span></button>
-        <button class="filter-tab" data-filter="history" onclick="setFilter('history')">History<span class="count" id="count-history">0</span></button>
+        <button class="filter-tab active" data-filter="pending">Pending<span class="count" id="count-pending">0</span></button>
+        <button class="filter-tab" data-filter="history">History<span class="count" id="count-history">0</span></button>
       </div>
     </div>
     <div id="submissions-list">
@@ -133,22 +135,38 @@
   <div class="toast-container" id="toast-container"></div>
 
   <script>
+    // ─── CONFIG ───────────────────────────────────────
+    var API_BASE = 'https://rialo-quest-9ny7.vercel.app/api/admin2';
+    var FETCH_TIMEOUT_MS = 10000;
     var pw = null;
     var activeFilter = 'pending';
 
+    // ─── UTILS ────────────────────────────────────────
     function showToast(msg, type, dur) {
-      type = type || 'info'; dur = dur || 4000;
+      type = type || 'info'; dur = dur || 4500;
       var c = document.getElementById('toast-container');
       var t = document.createElement('div');
       t.className = 'toast ' + type;
       t.innerHTML = msg;
       c.appendChild(t);
-      setTimeout(function() { t.remove(); }, dur);
+      setTimeout(function(){ t.remove(); }, dur);
+    }
+
+    function showError(msg) {
+      var el = document.getElementById('login-error');
+      el.className = 'error-banner';
+      el.style.display = 'block';
+      el.textContent = msg;
+    }
+
+    function clearError() {
+      var el = document.getElementById('login-error');
+      el.style.display = 'none';
+      el.textContent = '';
     }
 
     function shortAddr(a) { return a.slice(0, 6) + '...' + a.slice(-4); }
-    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function(c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
-
+    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];}); }
     function formatDate(s) {
       try {
         var d = new Date(s);
@@ -160,17 +178,47 @@
       } catch (e) { return s; }
     }
 
-    function doLogin() {
-      var input = document.getElementById('pw-input').value.trim();
-      if (!input) { showToast('Enter password', 'error'); return; }
+    // Fetch with timeout — guarantees we never hang silently
+    function timedFetch(url) {
+      return new Promise(function(resolve, reject) {
+        var timedOut = false;
+        var timer = setTimeout(function(){
+          timedOut = true;
+          reject(new Error('Request timed out after ' + (FETCH_TIMEOUT_MS / 1000) + 's. Server is unreachable.'));
+        }, FETCH_TIMEOUT_MS);
+        fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store' })
+          .then(function(r){
+            if (timedOut) return;
+            clearTimeout(timer);
+            resolve(r);
+          })
+          .catch(function(e){
+            if (timedOut) return;
+            clearTimeout(timer);
+            reject(e);
+          });
+      });
+    }
 
-      fetch('/api/review?secret=' + encodeURIComponent(input) + '&filter=pending')
-        .then(function(r) {
-          if (r.status === 401) { showToast('Invalid password', 'error'); throw 'unauth'; }
-          if (!r.ok) throw new Error('Server error: ' + r.status);
+    // ─── LOGIN ────────────────────────────────────────
+    function doLogin() {
+      clearError();
+      var input = document.getElementById('pw-input').value.trim();
+      if (!input) { showError('Enter a password.'); return; }
+
+      var btn = document.getElementById('login-btn');
+      btn.disabled = true;
+      btn.textContent = 'Checking...';
+
+      var url = API_BASE + '?secret=' + encodeURIComponent(input) + '&action=list&filter=pending';
+
+      timedFetch(url)
+        .then(function(r){
+          if (r.status === 401) { showError('Invalid password.'); throw 'unauth'; }
+          if (!r.ok) throw new Error('Server returned ' + r.status);
           return r.json();
         })
-        .then(function(data) {
+        .then(function(data){
           pw = input;
           sessionStorage.setItem('rialo_admin_pw', pw);
           document.getElementById('login-view').style.display = 'none';
@@ -181,28 +229,33 @@
           showToast('<strong>Console unlocked</strong>', 'success');
           setInterval(loadSubmissions, 30000);
         })
-        .catch(function(err) {
-          if (err !== 'unauth') showToast('Login failed: ' + (err.message || err), 'error');
+        .catch(function(err){
+          btn.disabled = false;
+          btn.textContent = 'Unlock Console';
+          if (err !== 'unauth') {
+            showError('Login failed: ' + (err.message || err));
+          }
         });
     }
 
+    // ─── LOAD SUBMISSIONS ─────────────────────────────
     function loadSubmissions() {
       if (!pw) return;
-      fetch('/api/review?secret=' + encodeURIComponent(pw) + '&filter=' + activeFilter)
-        .then(function(r) { return r.json(); })
-        .then(function(data) { render(data); })
-        .catch(function(err) { showToast('Reload failed', 'error'); });
+      var url = API_BASE + '?secret=' + encodeURIComponent(pw) + '&action=list&filter=' + activeFilter;
+      timedFetch(url)
+        .then(function(r){ return r.json(); })
+        .then(function(data){ render(data); })
+        .catch(function(err){ showToast('Reload failed: ' + err.message, 'error'); });
     }
 
     function setFilter(f) {
       activeFilter = f;
       var tabs = document.querySelectorAll('.filter-tab');
-      for (var i = 0; i < tabs.length; i++) {
-        tabs[i].classList.toggle('active', tabs[i].dataset.filter === f);
-      }
+      for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle('active', tabs[i].dataset.filter === f);
       loadSubmissions();
     }
 
+    // ─── RENDER ───────────────────────────────────────
     function render(data) {
       var counts = data.counts || { pending: 0, history: 0 };
       document.getElementById('count-pending').textContent = counts.pending || 0;
@@ -246,52 +299,68 @@
         html += '  </div>';
         if (isPending) {
           html += '  <div class="sub-actions">';
-          html += '    <button class="action-btn approve" onclick="review(\'' + sub.id + '\', \'approve\')">&#10003; Approve &middot; Mint</button>';
-          html += '    <button class="action-btn reject" onclick="review(\'' + sub.id + '\', \'reject\')">&#10007; Reject</button>';
+          html += '    <button class="action-btn approve" data-id="' + sub.id + '" data-action="approve">&#10003; Approve &middot; Mint</button>';
+          html += '    <button class="action-btn reject" data-id="' + sub.id + '" data-action="reject">&#10007; Reject</button>';
           html += '  </div>';
         }
         html += '</div>';
       }
       list.innerHTML = html;
+
+      // Wire up approve/reject buttons
+      var actionBtns = list.querySelectorAll('.action-btn');
+      for (var k = 0; k < actionBtns.length; k++) {
+        actionBtns[k].addEventListener('click', function(e) {
+          var b = e.currentTarget;
+          review(b.dataset.id, b.dataset.action);
+        });
+      }
     }
 
+    // ─── APPROVE / REJECT ─────────────────────────────
     function review(id, action) {
       var btns = document.querySelectorAll('.action-btn');
       for (var i = 0; i < btns.length; i++) btns[i].disabled = true;
 
-      fetch('/api/review?secret=' + encodeURIComponent(pw), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ submissionId: id, action: action })
-      })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
+      var url = API_BASE + '?secret=' + encodeURIComponent(pw) + '&action=' + action + '&id=' + encodeURIComponent(id);
+      timedFetch(url)
+        .then(function(r){ return r.json(); })
+        .then(function(data){
           if (action === 'approve' && data.success) {
             var link = data.explorerUrl ? '<br/><a href="' + data.explorerUrl + '" target="_blank">View tx &#8599;</a>' : '';
-            showToast('<strong>Approved &middot; XP minted</strong>' + link, 'success', 5000);
-          } else if (action === 'reject') {
+            showToast('<strong>Approved &middot; XP minted</strong>' + link, 'success', 6000);
+          } else if (action === 'reject' && data.success) {
             showToast('<strong>Submission rejected</strong>', 'success');
           } else {
             showToast('<strong>Failed:</strong> ' + (data.error || 'Unknown'), 'error', 5000);
           }
           loadSubmissions();
         })
-        .catch(function(err) {
-          showToast('Failed: ' + err.message, 'error');
+        .catch(function(err){
+          showToast('Action failed: ' + err.message, 'error');
           for (var i = 0; i < btns.length; i++) btns[i].disabled = false;
         });
     }
 
-    // Auto-login if password is saved
+    // ─── WIRING ───────────────────────────────────────
     window.addEventListener('load', function() {
+      document.getElementById('login-btn').addEventListener('click', doLogin);
+      document.getElementById('pw-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') doLogin();
+      });
+
+      var tabs = document.querySelectorAll('.filter-tab');
+      for (var i = 0; i < tabs.length; i++) {
+        tabs[i].addEventListener('click', function(e) {
+          setFilter(e.currentTarget.dataset.filter);
+        });
+      }
+
       var saved = sessionStorage.getItem('rialo_admin_pw');
       if (saved) {
         document.getElementById('pw-input').value = saved;
         doLogin();
       }
-      document.getElementById('pw-input').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') doLogin();
-      });
     });
   </script>
 </body>

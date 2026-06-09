@@ -1,11 +1,16 @@
 // /api/admin-approve.js
 // Admin endpoint to list, approve, and reject pending submissions.
-// Auth: X-Admin-Secret header must match ADMIN_SECRET env var.
+// Auth: X-Admin-Secret header must match HARDCODED_ADMIN_SECRET below.
 
 const { createWalletClient, createPublicClient, http, parseAbi } = require('viem');
 const { privateKeyToAccount } = require('viem/accounts');
 const { baseSepolia } = require('viem/chains');
 const { createClient } = require('redis');
+
+// ─── HARDCODED ADMIN SECRET ────────────────────────────────
+// Change this string and redeploy if you ever want to rotate.
+const HARDCODED_ADMIN_SECRET = 'rialo2026';
+// ───────────────────────────────────────────────────────────
 
 const QUEST_MANAGER_ADDRESS = process.env.NEXT_PUBLIC_QUEST_MANAGER_CONTRACT;
 const ALCHEMY_URL = process.env.NEXT_PUBLIC_ALCHEMY_URL || 'https://sepolia.base.org';
@@ -31,9 +36,9 @@ module.exports = async (req, res) => {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // Auth check
+  // Auth check — uses HARDCODED secret
   const adminSecret = req.headers['x-admin-secret'];
-  if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
+  if (!adminSecret || adminSecret.trim() !== HARDCODED_ADMIN_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -44,7 +49,6 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       const filter = (req.query.filter || 'pending').toLowerCase();
 
-      // Get all pending submission IDs (newest first)
       const pendingIds = await redis.zRange('pending-submissions', 0, -1, { REV: true });
       const historyIds = await redis.zRange('history-submissions', 0, -1, { REV: true });
 
@@ -87,7 +91,6 @@ module.exports = async (req, res) => {
         sub.status = 'rejected';
         sub.reviewedAt = new Date().toISOString();
         await redis.set(`submission:${submissionId}`, JSON.stringify(sub));
-        // Move from pending to history
         await redis.zRem('pending-submissions', submissionId);
         await redis.zAdd('history-submissions', { score: Date.now(), value: submissionId });
         return res.status(200).json({ success: true, status: 'rejected', submission: sub });
